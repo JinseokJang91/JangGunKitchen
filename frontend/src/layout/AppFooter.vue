@@ -3,7 +3,7 @@ import logoText from '@/assets/images/logo/logo-full.png';
 import badgeAppStore from '@/assets/images/badges/badge_appstore.svg';
 import badgeGooglePlay from '@/assets/images/badges/badge_googleplay.svg';
 import iconYouTube from '@/assets/images/badges/badge_youtube.png';
-import iconInstagram from '@/assets/images/badges/badge_instagram.svg';
+import iconInstagram from '@/assets/images/badges/badge_instagram.png';
 import iconFacebook from '@/assets/images/badges/badge_facebook.png';
 import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
 </script>
@@ -46,7 +46,7 @@ import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
                     </a>
                 </div>
                 <div class="footer-links-group">
-                    <a href="#" class="footer-link">ABOUT US</a><span class="divider">|</span> <router-link to="/support" class="footer-link">고객지원</router-link><span class="divider">|</span> <a href="#" class="footer-link">이용약관</a>
+                    <a href="#" class="footer-link">About Us</a><span class="divider">|</span> <router-link to="/support" class="footer-link">고객지원</router-link><span class="divider">|</span> <a href="#" class="footer-link">이용약관</a>
                     <span class="divider">|</span>
                     <a href="#" class="footer-link">개인정보처리방침</a>
                 </div>

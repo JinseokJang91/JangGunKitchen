@@ -105,9 +105,18 @@ function onStepImageChange(e: Event, step: RecipeStepDraft): void {
         </div>
         <div v-if="modelValue.length === 0" class="recipe-form-section__empty">아직 단계가 없습니다. '단계 추가'를 눌러 시작하세요.</div>
 
-        <div v-for="(step, index) in modelValue" :key="step.id" class="recipe-form-block" :data-step-index="index">
+        <div
+            v-for="(step, index) in modelValue"
+            :key="step.id"
+            class="recipe-form-block recipe-form-step"
+            :class="{ 'recipe-form-step--with-image': !!step.previewUrl }"
+            :data-step-index="index"
+        >
             <div class="recipe-form-block__toolbar">
-                <div class="recipe-form-block__toolbar-title">단계 {{ index + 1 }}</div>
+                <div class="recipe-form-block__toolbar-title">
+                    <span class="recipe-form-step__num" aria-hidden="true">{{ index + 1 }}</span>
+                    <span>단계 {{ index + 1 }}</span>
+                </div>
                 <div class="recipe-form-block__toolbar-actions">
                     <Button class="recipe-form-btn recipe-form-btn--icon-only" icon="pi pi-arrow-up" severity="secondary" aria-label="위로 이동" @click="moveStepUp(index)" :disabled="index === 0 || disabled" />
                     <Button class="recipe-form-btn recipe-form-btn--icon-only" icon="pi pi-arrow-down" severity="secondary" aria-label="아래로 이동" @click="moveStepDown(index)" :disabled="index === modelValue.length - 1 || disabled" />
@@ -115,40 +124,41 @@ function onStepImageChange(e: Event, step: RecipeStepDraft): void {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div class="md:col-span-2">
-                    <label class="recipe-form-section__label">이미지</label>
-                    <input :ref="(el) => setStepInputRef(step.id, el)" type="file" accept="image/*" class="hidden" :disabled="disabled" @change="onStepImageChange($event, step)" />
-                    <div class="recipe-form-upload" role="button" tabindex="0" @click="() => !disabled && stepInputRefs[step.id]?.click()">
-                        <div v-if="!step.previewUrl" class="recipe-form-upload__placeholder">
-                            <span class="pi pi-image recipe-form-upload__placeholder-icon" aria-hidden="true"></span>
-                            <span>이미지를 클릭하여 추가하세요</span>
-                        </div>
-                        <div v-else class="relative w-full h-full min-h-0">
-                            <img :src="step.previewUrl" alt="step preview" class="w-full h-full object-cover rounded-md" />
-                            <button
-                                type="button"
-                                class="recipe-form-upload__remove"
-                                :disabled="disabled"
-                                aria-label="단계 이미지 삭제"
-                                @click.stop="$emit('step-image-clear', step.id)"
-                            >
+            <input :ref="(el) => setStepInputRef(step.id, el)" type="file" accept="image/*" class="hidden" :disabled="disabled" @change="onStepImageChange($event, step)" />
+
+            <div class="recipe-form-step__content">
+                <div v-if="step.previewUrl" class="recipe-form-step__media">
+                    <div class="recipe-form-upload recipe-form-upload--filled" role="button" tabindex="0" @click="() => !disabled && stepInputRefs[step.id]?.click()">
+                        <div class="relative w-full h-full min-h-0 recipe-form-upload__preview">
+                            <img :src="step.previewUrl" alt="step preview" class="recipe-form-upload__img" />
+                            <button type="button" class="recipe-form-upload__remove" :disabled="disabled" aria-label="단계 이미지 삭제" @click.stop="$emit('step-image-clear', step.id)">
                                 <span class="pi pi-times" aria-hidden="true"></span>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div class="md:col-span-3">
+
+                <div class="recipe-form-step__text">
                     <label class="recipe-form-section__label">설명</label>
                     <Textarea
                         :model-value="step.text"
                         placeholder="이 단계에서의 설명을 작성하세요"
                         class="w-full"
                         :class="{ 'border-red-500': validationErrors?.[`step-text-${index}`] }"
-                        :rows="9"
+                        :rows="step.previewUrl ? 8 : 5"
                         @update:model-value="(v) => updateStepText(index, v)"
                         @input="$emit('clear-validation', `step-text-${index}`)"
                     />
+                    <button
+                        v-if="!step.previewUrl"
+                        type="button"
+                        class="recipe-form-step__add-image"
+                        :disabled="disabled"
+                        @click="() => !disabled && stepInputRefs[step.id]?.click()"
+                    >
+                        <i class="pi pi-image" aria-hidden="true"></i>
+                        이미지 추가 (선택)
+                    </button>
                 </div>
             </div>
         </div>

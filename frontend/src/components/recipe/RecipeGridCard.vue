@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button';
 import Card from 'primevue/card';
-import Tag from 'primevue/tag';
 import { computed } from 'vue';
 import type { RecipeGridItem } from '@/types/recipe';
 import { resolveProfileImage, resolveRecipeImage } from '@/utils/image';
@@ -9,7 +8,7 @@ import { resolveProfileImage, resolveRecipeImage } from '@/utils/image';
 const props = withDefaults(
     defineProps<{
         recipe: RecipeGridItem;
-        /** 카테고리 태그에 표시할 문자열 */
+        /** 1단 보조행에 표시할 카테고리 라벨 */
         categoryLabel?: string | null;
         /** 검색어 하이라이트 (지정 시 제목에 하이라이트 적용) */
         highlightKeyword?: string | null;
@@ -48,13 +47,34 @@ defineEmits<{
     'scroll-to-comments': [recipeId: number];
 }>();
 
-// 조회수 포맷 (만/억)
 const hitsText = computed(() => formatCount(props.recipe.hits));
 
-// 댓글 수 포맷
-const commentCountText = computed(() => formatCount(props.recipe.commentCount));
+/** 과장된 조회수는 시각 무게만 낮춤 (시드 수정은 이번 범위 밖, §5-4a) */
+const hitsAreLarge = computed(() => (props.recipe.hits ?? 0) >= 10000);
 
-// 검색어 하이라이트 분할
+const commentCountText = computed(() => {
+    if (!props.showCommentCount) return null;
+    return formatCount(props.recipe.commentCount ?? 0, { allowZero: true });
+});
+
+type MetaLineItem = { text: string; kind: 'time' | 'servings' | 'category' };
+
+/** 1단 보조행: 시간 · 인분 · 카테고리 */
+const metaLineItems = computed((): MetaLineItem[] => {
+    const items: MetaLineItem[] = [];
+    if (props.recipe.cookingTime) items.push({ text: props.recipe.cookingTime, kind: 'time' });
+    if (props.recipe.servings) items.push({ text: props.recipe.servings, kind: 'servings' });
+    if (props.categoryLabel) items.push({ text: props.categoryLabel, kind: 'category' });
+    return items;
+});
+
+const showAuthorRow = computed(() => props.showAuthor && !!(props.recipe.memberNickname || props.recipe.memberName));
+
+/** §3.2·§5-3a: 댓글 0도 표시 → 참여 영역/2단 높이 안정 */
+const showEngagement = computed(() => !!(hitsText.value || commentCountText.value));
+
+const showFooterZone = computed(() => props.showAuthor || props.showCommentCount);
+
 const highlightParts = computed(() => {
     if (!props.highlightKeyword || !props.recipe.title) {
         return [];
@@ -78,8 +98,9 @@ const highlightParts = computed(() => {
     return parts.length > 0 ? parts : [{ text, isHighlight: false }];
 });
 
-function formatCount(count: number | undefined | null): string | null {
-    if (!count || count === 0) return null;
+function formatCount(count: number | undefined | null, options?: { allowZero?: boolean }): string | null {
+    if (count == null) return null;
+    if (count === 0) return options?.allowZero ? '0' : null;
     if (count >= 100000000) {
         const eok = count / 100000000;
         const rounded = Math.round(eok * 10) / 10;
@@ -100,76 +121,88 @@ function formatCount(count: number | undefined | null): string | null {
             <template #header>
                 <div class="recipe-image-container">
                     <img :src="resolveRecipeImage(recipe.thumbnail)" :alt="recipe.title" class="recipe-image" />
-                    <div class="recipe-overlay">
-                        <div class="recipe-actions">
-                            <Button
-                                v-if="showFavorite"
-                                :icon="favoritesMode ? 'pi pi-heart-fill' : recipe.isFavorite ? 'pi pi-heart-fill' : 'pi pi-heart'"
-                                :class="recipe.isFavorite || favoritesMode ? 'p-button-danger' : 'p-button-secondary'"
-                                size="large"
-                                rounded
-                                @click.stop="$emit('favorite', recipe.id)"
-                            />
-                            <Button
-                                v-if="showBookmark"
-                                :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-                                :class="isBookmarked ? 'p-button-primary' : 'p-button-secondary'"
-                                size="large"
-                                rounded
-                                @click.stop="$emit('bookmark', recipe.id)"
-                            />
-                        </div>
-                        <Tag v-if="categoryLabel" :value="categoryLabel" severity="info" class="recipe-category-tag" />
+                    <!-- 2.3: 찜·북마크 우상단 상시 노출 -->
+                    <div v-if="showFavorite || showBookmark" class="recipe-actions" @click.stop>
+                        <Button
+                            v-if="showFavorite"
+                            :icon="favoritesMode ? 'pi pi-heart-fill' : recipe.isFavorite ? 'pi pi-heart-fill' : 'pi pi-heart'"
+                            :class="['recipe-action-btn', recipe.isFavorite || favoritesMode ? 'recipe-action-btn--favorite' : '']"
+                            rounded
+                            text
+                            aria-label="찜"
+                            @click.stop="$emit('favorite', recipe.id)"
+                        />
+                        <Button
+                            v-if="showBookmark"
+                            :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+                            :class="['recipe-action-btn', isBookmarked ? 'recipe-action-btn--bookmarked' : '']"
+                            rounded
+                            text
+                            aria-label="북마크"
+                            @click.stop="$emit('bookmark', recipe.id)"
+                        />
                     </div>
-                    <div v-if="hitsText" class="recipe-hits-overlay">조회수 {{ hitsText }}</div>
                 </div>
             </template>
             <template #content>
                 <div class="recipe-content">
-                    <!-- 제목 영역: 최대 2줄 고정 높이 (기존 margin-bottom 0.5rem 유지) -->
-                    <div class="recipe-title-zone">
-                        <h3 class="recipe-title">
-                            <template v-if="highlightKeyword && highlightParts.length">
-                                <template v-for="(part, index) in highlightParts" :key="index">
-                                    <mark v-if="part.isHighlight" class="bg-yellow-200">{{ part.text }}</mark>
-                                    <span v-else>{{ part.text }}</span>
+                    <!-- 1단: 타이틀 + 보조행(시간 · 인분 · 카테고리) -->
+                    <div class="recipe-zone-1">
+                        <div class="recipe-title-zone">
+                            <h3 class="recipe-title">
+                                <template v-if="highlightKeyword && highlightParts.length">
+                                    <template v-for="(part, index) in highlightParts" :key="index">
+                                        <mark v-if="part.isHighlight" class="bg-yellow-200">{{ part.text }}</mark>
+                                        <span v-else>{{ part.text }}</span>
+                                    </template>
                                 </template>
+                                <span v-else>{{ recipe.title }}</span>
+                            </h3>
+                        </div>
+                        <div class="recipe-meta-line" :class="{ 'recipe-meta-line--empty': metaLineItems.length === 0 }">
+                            <template v-if="metaLineItems.length">
+                                <span
+                                    v-for="(item, index) in metaLineItems"
+                                    :key="`${item.kind}-${item.text}`"
+                                    :class="['recipe-meta-line__item', `recipe-meta-line__item--${item.kind}`]"
+                                >
+                                    <span v-if="index > 0" class="recipe-meta-line__sep" aria-hidden="true">·</span>
+                                    {{ item.text }}
+                                </span>
                             </template>
-                            <span v-else>{{ recipe.title }}</span>
-                        </h3>
+                        </div>
                     </div>
-                    <div class="recipe-meta">
-                        <div class="recipe-info">
-                            <div v-if="recipe.cookingTime" class="info-item">
-                                <i class="pi pi-clock"></i>
-                                <span>{{ recipe.cookingTime }}</span>
+
+                    <!-- 2단: 작성자 | 조회 · 댓글 (§3.2 높이 고정) -->
+                    <div v-if="showFooterZone" class="recipe-zone-2">
+                        <div v-if="showAuthorRow" class="recipe-author">
+                            <div class="recipe-author__avatar">
+                                <img v-if="recipe.memberProfileImage" :src="resolveProfileImage(recipe.memberProfileImage)" alt="" class="recipe-author__img" />
+                                <i v-else class="pi pi-user recipe-author__fallback" aria-hidden="true"></i>
                             </div>
-                            <div v-if="recipe.servings" class="info-item">
-                                <i class="pi pi-users"></i>
-                                <span>{{ recipe.servings }}</span>
-                            </div>
+                            <span class="recipe-author__name">{{ recipe.memberNickname || recipe.memberName }}</span>
                         </div>
-                        <!-- 작성자 영역: 표시할 내용이 있을 때만 영역 노출 -->
-                        <div v-if="showAuthor && (recipe.memberNickname || recipe.memberName)" class="recipe-author-zone">
-                            <div class="recipe-author mt-2 flex items-center gap-1.5 md:gap-2">
-                                <div class="h-5 w-5 shrink-0 rounded-full bg-gray-300 md:h-6 md:w-6 flex items-center justify-center overflow-hidden">
-                                    <img v-if="recipe.memberProfileImage" :src="resolveProfileImage(recipe.memberProfileImage)" alt="작성자 프로필" class="w-full h-full object-cover" />
-                                    <i v-else class="pi pi-user text-gray-600 text-xs"></i>
-                                </div>
-                                <span class="text-sm text-gray-600 truncate">{{ recipe.memberNickname || recipe.memberName }}</span>
-                            </div>
+                        <div v-else class="recipe-author recipe-author--spacer" aria-hidden="true"></div>
+
+                        <div v-if="showEngagement" class="recipe-engagement" :class="{ 'recipe-engagement--large-hits': hitsAreLarge }">
+                            <span v-if="hitsText" class="recipe-engagement__hits">
+                                <span class="recipe-engagement__label">조회 </span>{{ hitsText }}
+                            </span>
+                            <span v-if="hitsText && commentCountText" class="recipe-engagement__sep" aria-hidden="true">·</span>
+                            <button
+                                v-if="commentCountText"
+                                type="button"
+                                class="recipe-engagement__comments"
+                                @click.stop="$emit('scroll-to-comments', recipe.id)"
+                            >
+                                <span class="recipe-engagement__label">댓글 </span>{{ commentCountText }}
+                            </button>
                         </div>
-                        <!-- 댓글 영역: showCommentCount이고 댓글 수가 있을 때만 영역 노출 (0이면 숨김) -->
-                        <div v-if="showCommentCount && commentCountText" class="recipe-comment-zone">
-                            <div class="recipe-comment-count mt-1">
-                                <span class="text-sm text-gray-600 cursor-pointer hover:text-primary truncate" @click.stop="$emit('scroll-to-comments', recipe.id)"> 댓글 {{ commentCountText }} </span>
-                            </div>
-                        </div>
-                        <!-- 추가한 날짜: 카드 맨 아래 고정 -->
-                        <div v-if="dateText" class="recipe-date-footer">
-                            <i class="pi pi-calendar recipe-date-footer__icon" aria-hidden="true"></i>
-                            <span class="recipe-date-footer__text">추가한 날짜 : {{ dateText }}</span>
-                        </div>
+                    </div>
+
+                    <div v-if="dateText" class="recipe-date-footer">
+                        <i class="pi pi-calendar recipe-date-footer__icon" aria-hidden="true"></i>
+                        <span class="recipe-date-footer__text">추가한 날짜 : {{ dateText }}</span>
                     </div>
                 </div>
             </template>
@@ -178,18 +211,14 @@ function formatCount(count: number | undefined | null): string | null {
 </template>
 
 <style scoped>
-/* 레시피 그리드 카드 스타일은 layout _recipe-card-list.scss 공통 사용 */
+/* 레이아웃·카드 크롬은 layout _recipe-card-list.scss 공통 */
 .recipe-content {
     display: flex;
     flex-direction: column;
     min-height: 100%;
+    gap: 0.35rem;
 }
-.recipe-content .recipe-meta {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
+
 .recipe-date-footer {
     margin-top: auto;
     display: flex;

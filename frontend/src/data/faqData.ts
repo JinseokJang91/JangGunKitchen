@@ -41,12 +41,6 @@ export const FAQ_ITEMS: FaqItem[] = [
         question: '재료 손질법은 어디서 볼 수 있나요?',
         answer: '재료 관리에서 "손질법" 탭을 선택하면 됩니다. 각 재료별로 손질 방법, 커팅 팁 등을 확인할 수 있습니다.'
     },
-    {
-        id: 'ingredient-3',
-        categoryId: 'ingredient',
-        question: '재료 정보 요청은 어떻게 하나요?',
-        answer: '재료 상세 페이지에서 "정보 요청" 버튼을 클릭하세요. 보관법 또는 손질법 중 필요한 타입을 선택하고 요청 사항을 입력하면 관리자 검토 후 등록됩니다.'
-    },
     // 회원/계정
     {
         id: 'member-1',

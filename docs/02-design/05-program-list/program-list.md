@@ -134,12 +134,12 @@
 | 5 | BE-COOK-005 | Controller | 레시피북 컨트롤러 | app/.../cook/api/recipe/web/RecipeBookController.java | 레시피북 CRUD·순서·기본책 | recipebook |
 | 6 | BE-COOK-006 | Controller | 레시피 조회수 컨트롤러 | app/.../cook/api/recipe/web/RecipeViewController.java | 조회 등록·최근 본 목록·삭제 | recipe_view |
 | 7 | BE-COOK-007 | Controller | 레시피 찜 컨트롤러 | app/.../cook/api/recipe/web/RecipeFavoriteController.java | 찜 토글·목록·체크·개수 | recipe_favorite |
-| 8 | BE-COOK-008 | Controller | 카테고리 컨트롤러 | app/.../cook/api/category/web/CategoryController.java | 트렌딩 카테고리·카테고리별 레시피 | recipe_category |
+| 8 | BE-COOK-008 | Controller | 카테고리 컨트롤러 | ~~app/.../cook/api/category/web/CategoryController.java~~ | - | 삭제됨 |
 | 9 | BE-COOK-009 | Controller | 테마 컬렉션 컨트롤러 | ~~app/.../cook/api/theme/web/ThemeCollectionController.java~~ | - | 삭제됨 |
 | 10 | BE-COOK-010 | Controller | 관리자 테마 컨트롤러 | ~~app/.../cook/api/admin/web/AdminThemeCollectionController.java~~ | - | 삭제됨 |
 | 11 | BE-COOK-011 | Controller | 크리에이터 컨트롤러 | app/.../cook/api/creator/web/CreatorController.java | 추천 크리에이터 | member |
 | 12 | BE-COOK-012 | Controller | 재료 컨트롤러 | app/.../cook/api/ingredient/web/IngredientController.java | 재료 그룹·보관법·손질법 조회 | ingredient 등 |
-| 13 | BE-COOK-013 | Controller | 재료 요청 컨트롤러 | app/.../cook/api/ingredient/web/IngredientRequestController.java | 재료 등록 요청 목록·상태 처리 | ingredient_request |
+| 13 | BE-COOK-013 | Controller | 재료 요청 컨트롤러 | ~~app/.../cook/api/ingredient/web/IngredientRequestController.java~~ | - | 삭제됨 |
 | 14 | BE-COOK-014 | Controller | 관리자 재료 컨트롤러 | app/.../cook/api/admin/web/AdminIngredientController.java | 재료 그룹·재료·보관법·손질법 관리 | ingredient_group 등 |
 | 15 | BE-COOK-015 | Controller | 검색 컨트롤러 | app/.../cook/api/search/web/SearchController.java | 레시피 검색 | recipe |
 | 16 | BE-COOK-016 | Controller | 추천 컨트롤러 | app/.../cook/api/recommendation/web/RecommendationController.java | 오늘의 추천 레시피 | recipe |
@@ -149,11 +149,11 @@
 | 20 | BE-COOK-020 | Service | 레시피북 서비스 | app/.../cook/api/recipe/domain/service/RecipeBookService.java | 레시피북 CRUD·순서 | - |
 | 21 | BE-COOK-021 | Service | 레시피 조회 서비스 | app/.../cook/api/recipe/domain/service/RecipeViewService.java | 조회 등록·최근 본 | - |
 | 22 | BE-COOK-022 | Service | 레시피 찜 서비스 | app/.../cook/api/recipe/domain/service/RecipeFavoriteService.java | 찜 토글·목록 | - |
-| 23 | BE-COOK-023 | Service | 카테고리 서비스 | app/.../cook/api/category/domain/service/CategoryService.java | 트렌딩·카테고리별 레시피 | - |
+| 23 | BE-COOK-023 | Service | 카테고리 서비스 | ~~app/.../cook/api/category/domain/service/CategoryService.java~~ | - | 삭제됨 |
 | 24 | BE-COOK-024 | Service | 테마 컬렉션 서비스 | ~~app/.../cook/api/theme/domain/service/ThemeCollectionService.java~~ | - | 삭제됨 |
 | 25 | BE-COOK-025 | Service | 크리에이터 추천 서비스 | app/.../cook/api/creator/domain/service/CreatorRecommendationService.java | 추천 크리에이터 산출 | - |
 | 26 | BE-COOK-026 | Service | 재료 서비스 | app/.../cook/api/ingredient/domain/service/IngredientService.java | 재료 그룹·재료·보관·손질 조회 | - |
-| 27 | BE-COOK-027 | Service | 재료 요청 서비스 | app/.../cook/api/ingredient/domain/service/IngredientRequestService.java | 재료 등록 요청 처리 | - |
+| 27 | BE-COOK-027 | Service | 재료 요청 서비스 | ~~app/.../cook/api/ingredient/domain/service/IngredientRequestService.java~~ | - | 삭제됨 |
 | 28 | BE-COOK-028 | Service | 관리자 재료 서비스 | app/.../cook/api/admin/domain/service/AdminIngredientService.java | 재료 그룹·재료·보관·손질 관리 | - |
 | 29 | BE-COOK-029 | Service | 검색 서비스 | app/.../cook/api/search/domain/service/SearchService.java | 레시피 검색 | - |
 | 30 | BE-COOK-030 | Service | 추천 서비스 | app/.../cook/api/recommendation/domain/service/RecommendationService.java | 오늘의 추천 | - |
@@ -172,7 +172,7 @@
 | 43 | BE-COOK-043 | Repository | 레시피 조회 저장소 | app/.../cook/api/recipe/domain/repository/RecipeViewRepository.java | recipe_view |
 | 44 | BE-COOK-044 | Repository | 레시피 단계 저장소 | app/.../cook/api/recipe/domain/repository/RecipeStepRepository.java | recipe_detail |
 | 45 | BE-COOK-045 | Repository | 테마 컬렉션/레시피 저장소 | ~~app/.../cook/api/theme/domain/repository/...~~ | - | 삭제됨 |
-| 46 | BE-COOK-046 | Repository | 재료 그룹/재료/보관/손질/요청 저장소 | app/.../cook/api/ingredient/domain/repository/IngredientGroupRepository.java, IngredientRepository.java, IngredientStorageRepository.java, IngredientPreparationRepository.java, IngredientRequestRepository.java | ingredient* |
+| 46 | BE-COOK-046 | Repository | 재료 그룹/재료/보관/손질 저장소 | app/.../cook/api/ingredient/domain/repository/IngredientGroupRepository.java, IngredientRepository.java, IngredientStorageRepository.java, IngredientPreparationRepository.java | ingredient* |
 | 47 | BE-COOK-047 | Entity | 레시피 엔티티 | app/.../cook/api/recipe/domain/entity/Recipe.java | recipe |
 | 48 | BE-COOK-048 | Entity | 레시피 상세 엔티티 | app/.../cook/api/recipe/domain/entity/RecipeDetail.java | recipe_detail |
 | 49 | BE-COOK-049 | Entity | 레시피 이미지 엔티티 | app/.../cook/api/recipe/domain/entity/RecipeImage.java | recipe_image |
@@ -184,10 +184,10 @@
 | 55 | BE-COOK-055 | Entity | 레시피 인기도/이력 엔티티 | app/.../cook/api/recipe/domain/entity/RecipePopularity.java, RecipePopularityHistory.java | recipe_popularity* |
 | 56 | BE-COOK-056 | Entity | 레시피북/북마크 엔티티 | app/.../cook/api/recipe/domain/entity/RecipeBook.java, RecipeBookmark.java | recipebook, recipe_bookmark |
 | 57 | BE-COOK-057 | Entity | 테마 컬렉션/레시피 엔티티 | ~~app/.../cook/api/theme/domain/entity/...~~ | - | 삭제됨 |
-| 58 | BE-COOK-058 | Entity | 재료 그룹/재료/보관/손질/요청 엔티티 | app/.../cook/api/ingredient/domain/entity/IngredientGroup.java, Ingredient.java, IngredientStorage.java, IngredientPreparation.java, IngredientRequest.java | ingredient* |
+| 58 | BE-COOK-058 | Entity | 재료 그룹/재료/보관/손질 엔티티 | app/.../cook/api/ingredient/domain/entity/IngredientGroup.java, Ingredient.java, IngredientStorage.java, IngredientPreparation.java | ingredient* |
 | 59 | BE-COOK-059 | DTO | 레시피 관련 DTO | app/.../cook/api/recipe/dto/RecipeDto.java, RecipeSimpleDto.java, RecipeDetailDto.java, RecipeImageDto.java, RecipeCategoryDto.java, RecipeCookingTipDto.java, RecipeIngredientGroupDto.java, RecipeIngredientItemDto.java, RecipeStepDto.java, RecipeStepDetailDto.java, RecipeStatsDto.java, RecipeViewDto.java, RecipeFavoriteDto.java, RecipeBookDto.java, RecipeBookmarkDto.java, RecipeCommentDto.java, MemberCommentItemDto.java | API 입출력 |
-| 60 | BE-COOK-060 | DTO | 카테고리/크리에이터 DTO | app/.../cook/api/category/dto/TrendingCategoryDto.java, creator/dto/CreatorDto.java | API 입출력 |
-| 61 | BE-COOK-061 | DTO | 재료 관련 DTO | app/.../cook/api/ingredient/dto/IngredientGroupDto.java, IngredientDto.java, IngredientListResponseDto.java, IngredientStorageDto.java, IngredientPreparationDto.java, IngredientRequestDto.java | API 입출력 |
+| 60 | BE-COOK-060 | DTO | 크리에이터 DTO | app/.../cook/api/creator/dto/CreatorDto.java | API 입출력 |
+| 61 | BE-COOK-061 | DTO | 재료 관련 DTO | app/.../cook/api/ingredient/dto/IngredientGroupDto.java, IngredientDto.java, IngredientListResponseDto.java, IngredientStorageDto.java, IngredientPreparationDto.java | API 입출력 |
 | 62 | BE-COOK-062 | DTO | 인기/추천 DTO | app/.../cook/api/popular/dto/PopularRecipeDto.java, PopularityStatsDto.java, recommendation/dto/RecommendedRecipeDto.java, TodayRecommendationDto.java | API 입출력 |
 | 63 | BE-COOK-063 | Config | 배치 스케줄 설정 | app/.../cook/api/popular/config/BatchSchedulerConfig.java | 인기도 계산 스케줄 | - |
 | 64 | BE-COOK-064 | Constants | 레시피 상수 | app/.../cook/api/recipe/domain/constants/RecipeConstants.java | 레시피 관련 상수 | - |
@@ -221,7 +221,7 @@
 | 13 | FE-VW-013 | 재료 그룹 등록 | views/pages/admin/IngredientGroupRegister.vue | 재료 그룹 등록 | /admin/ingredient-group/register |
 | 14 | FE-VW-014 | 재료 등록(관리자) | views/pages/admin/IngredientRegister.vue | 재료 등록 | /admin/ingredient/register |
 | 15 | FE-VW-015 | 재료 관리 등록 | views/pages/admin/IngredientManagementRegister.vue | 저장법·손질법 등록 | /admin/ingredient-management/register |
-| 16 | FE-VW-016 | 재료 요청 목록 | views/pages/admin/IngredientRequestList.vue | 재료 추가 요청 처리 | /admin/ingredient-requests |
+| 16 | FE-VW-016 | 재료 요청 목록 | ~~views/pages/admin/IngredientRequestList.vue~~ | - | 삭제됨 |
 | 17 | FE-VW-017 | 문의 목록(관리자) | views/pages/admin/AdminInquiryList.vue | 1:1 문의 목록·답변 | /admin/inquiries |
 | 18 | FE-VW-018 | 공통코드 관리 | views/pages/admin/CommonCodeManagement.vue | 공통코드 CRUD | /admin/common-codes |
 | 19 | FE-VW-019 | 재료 관리 | views/pages/ingredient/IngredientManagement.vue | 재료 그룹·재료 조회 | /ingredient/management |
@@ -280,8 +280,8 @@
 | 21 | FE-CMP-021 | 레시피 폼 조리순서 | components/recipe/form/RecipeFormSteps.vue | 조리 순서 입력 | - |
 | 22 | FE-CMP-022 | 인기 레시피 | components/dashboard/PopularRecipes.vue | 인기 레시피 섹션 | - |
 | 23 | FE-CMP-023 | 테마 컬렉션 | ~~components/dashboard/ThemeCollections.vue~~ | - | 삭제됨 |
-| 24 | FE-CMP-024 | 카테고리 섹션들 | components/dashboard/CategorySections.vue | 트렌딩 카테고리 묶음 | - |
-| 25 | FE-CMP-025 | 카테고리 섹션 | components/dashboard/CategorySection.vue | 카테고리별 레시피 | - |
+| 24 | FE-CMP-024 | 카테고리 섹션들 | ~~components/dashboard/CategorySections.vue~~ | - | 삭제됨 |
+| 25 | FE-CMP-025 | 카테고리 섹션 | ~~components/dashboard/CategorySection.vue~~ | - | 삭제됨 |
 | 26 | FE-CMP-026 | 최근 본 레시피 | components/dashboard/RecentViews.vue | 최근 본 섹션 | - |
 | 27 | FE-CMP-027 | 오늘의 추천 | components/dashboard/TodayRecommendations.vue | 오늘의 추천 섹션 | - |
 | 28 | FE-CMP-028 | 추천 크리에이터 | components/dashboard/RecommendedCreators.vue | 추천 크리에이터 섹션 | - |
@@ -308,12 +308,12 @@
 | 7 | FE-API-007 | API | 레시피 API | api/recipeApi.ts | 레시피 CRUD·목록·인기·피드 | - |
 | 8 | FE-API-008 | API | 북마크 API | api/bookmarkApi.ts | 레시피북·북마크·메모 | - |
 | 9 | FE-API-009 | API | 검색 API | api/searchApi.ts | 레시피 검색 | - |
-| 10 | FE-API-010 | API | 카테고리 API | api/categoryApi.ts | 트렌딩·카테고리별 레시피 | - |
+| 10 | FE-API-010 | API | 카테고리 API | ~~api/categoryApi.ts~~ | - | 삭제됨 |
 | 11 | FE-API-011 | API | 테마 API | ~~api/themeApi.ts~~ | - | 삭제됨 |
 | 12 | FE-API-012 | API | 크리에이터 API | api/creatorApi.ts | 추천 크리에이터 | - |
 | 13 | FE-API-013 | API | 추천 API | api/recommendationApi.ts | 오늘의 추천 | - |
 | 14 | FE-API-014 | API | 레시피 조회 API | api/recipeViewApi.ts | 조회 등록·최근 본 | - |
-| 15 | FE-API-015 | API | 재료 API | api/ingredientApi.ts | 재료 그룹·재료·보관·손질·요청 | - |
+| 15 | FE-API-015 | API | 재료 API | api/ingredientApi.ts | 재료 그룹·재료·보관·손질 | - |
 | 16 | FE-API-016 | API | 공통코드 API | api/commonCodeApi.ts | 공통코드 조회 | - |
 | 17 | FE-STORE-001 | Store | 인증 스토어 | stores/authStore.ts | 로그인 상태·토큰 | - |
 | 18 | FE-UTIL-001 | Utils | HTTP 클라이언트 | utils/http.ts | axios 인스턴스·인터셉터 | - |
@@ -359,13 +359,11 @@
 | 10 | cook | RecipeBookController | /api/cook/recipe/bookmarks/recipe-books | GET /, POST /, PUT /{recipeBookId}, DELETE /{recipeBookId}, PUT /reorder, POST /default |
 | 11 | cook | RecipeViewController | /api/cook | POST /recipes/{recipeId}/view, GET /members/{memberId}/recent-views, DELETE /members/{memberId}/recent-views |
 | 12 | cook | RecipeFavoriteController | /api/cook/recipe/favorites | GET /{memberId}, POST /, DELETE /, PUT /toggle, GET /check, /count/{recipeId} |
-| 13 | cook | CategoryController | /api/cook/categories | GET /trending, /{codeId}/{detailCodeId}/recipes |
-| 14 | cook | CreatorController | /api/cook/creators | GET /recommended |
-| 15 | cook | SearchController | /api/cook/search | GET /recipes |
-| 16 | cook | RecommendationController | /api/cook/recipes/recommendations | GET /today |
-| 17 | cook | IngredientController | /api/cook/ingredients | GET /groups, /, /{ingredientId}/storage, /{ingredientId}/preparation |
-| 18 | cook | IngredientRequestController | /api/cook/ingredients/requests | POST /, GET /my, /admin, PUT /{id}/status |
-| 19 | cook | AdminIngredientController | /api/cook/admin/ingredients | POST /groups, PUT/DELETE /groups/{id}, PUT/DELETE /{id}, POST /storage, /preparation, PUT/DELETE 등 |
+| 13 | cook | CreatorController | /api/cook/creators | GET /recommended |
+| 14 | cook | SearchController | /api/cook/search | GET /recipes |
+| 15 | cook | RecommendationController | /api/cook/recipes/recommendations | GET /today |
+| 16 | cook | IngredientController | /api/cook/ingredients | GET /groups, /, /{ingredientId}/storage, /{ingredientId}/preparation |
+| 17 | cook | AdminIngredientController | /api/cook/admin/ingredients | POST /groups, PUT/DELETE /groups/{id}, PUT/DELETE /{id}, POST /storage, /preparation, PUT/DELETE 등 |
 
 ---
 

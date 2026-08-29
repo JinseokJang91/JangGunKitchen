@@ -82,32 +82,26 @@
 | 70 | cook | PUT | /api/cook/recipe/favorites/toggle | RecipeFavoriteController | 즐겨찾기 토글 |
 | 71 | cook | GET | /api/cook/recipe/favorites/check | RecipeFavoriteController | 즐겨찾기 여부 확인 |
 | 72 | cook | GET | /api/cook/recipe/favorites/count/{recipeId} | RecipeFavoriteController | 레시피별 즐겨찾기 수 |
-| 73 | cook | GET | /api/cook/categories/trending | CategoryController | 트렌딩 카테고리 |
-| 74 | cook | GET | /api/cook/categories/{codeId}/{detailCodeId}/recipes | CategoryController | 카테고리별 레시피 |
-| 75 | cook | GET | /api/cook/creators/recommended | CreatorController | 추천 크리에이터 |
-| 76 | cook | GET | /api/cook/search/recipes | SearchController | 레시피 검색 |
-| 77 | cook | GET | /api/cook/recipes/recommendations/today | RecommendationController | 오늘의 추천 레시피 |
-| 78 | cook | GET | /api/cook/ingredients/groups | IngredientController | 재료 그룹 목록 |
-| 79 | cook | GET | /api/cook/ingredients | IngredientController | 재료 목록 |
-| 80 | cook | GET | /api/cook/ingredients/{ingredientId}/storage | IngredientController | 보관법 목록 |
-| 81 | cook | GET | /api/cook/ingredients/{ingredientId}/preparation | IngredientController | 손질법 목록 |
-| 82 | cook | POST | /api/cook/ingredients/requests | IngredientRequestController | 재료 요청 등록 |
-| 83 | cook | GET | /api/cook/ingredients/requests/my | IngredientRequestController | 내 재료 요청 목록 |
-| 84 | cook | GET | /api/cook/ingredients/requests/admin | IngredientRequestController | 재료 요청 목록(관리자) |
-| 85 | cook | PUT | /api/cook/ingredients/requests/{id}/status | IngredientRequestController | 재료 요청 상태 변경 |
-| 86 | cook | POST | /api/cook/admin/ingredients/groups | AdminIngredientController | 재료 그룹 등록 |
-| 87 | cook | POST | /api/cook/admin/ingredients | AdminIngredientController | 재료 등록 |
-| 88 | cook | PUT | /api/cook/admin/ingredients/groups/{id} | AdminIngredientController | 재료 그룹 수정 |
-| 89 | cook | DELETE | /api/cook/admin/ingredients/groups/{id} | AdminIngredientController | 재료 그룹 삭제 |
-| 90 | cook | PUT | /api/cook/admin/ingredients/{id} | AdminIngredientController | 재료 수정 |
-| 91 | cook | DELETE | /api/cook/admin/ingredients/{id} | AdminIngredientController | 재료 삭제 |
-| 92 | cook | POST | /api/cook/admin/ingredients/storage | AdminIngredientController | 보관법 등록 |
-| 93 | cook | POST | /api/cook/admin/ingredients/preparation | AdminIngredientController | 손질법 등록 |
-| 94 | cook | PUT | /api/cook/admin/ingredients/storage/{id} | AdminIngredientController | 보관법 수정 |
-| 95 | cook | PUT | /api/cook/admin/ingredients/preparation/{id} | AdminIngredientController | 손질법 수정 |
-| 96 | cook | POST | /api/cook/admin/ingredients/upload-image | AdminIngredientController | 재료 이미지 업로드 |
-| 97 | cook | DELETE | /api/cook/admin/ingredients/storage/{id} | AdminIngredientController | 보관법 삭제 |
-| 98 | cook | DELETE | /api/cook/admin/ingredients/preparation/{id} | AdminIngredientController | 손질법 삭제 |
+| 73 | cook | GET | /api/cook/creators/recommended | CreatorController | 추천 크리에이터 |
+| 74 | cook | GET | /api/cook/search/recipes | SearchController | 레시피 검색 |
+| 75 | cook | GET | /api/cook/recipes/recommendations/today | RecommendationController | 오늘의 추천 레시피 |
+| 76 | cook | GET | /api/cook/ingredients/groups | IngredientController | 재료 그룹 목록 |
+| 77 | cook | GET | /api/cook/ingredients | IngredientController | 재료 목록 |
+| 78 | cook | GET | /api/cook/ingredients/{ingredientId}/storage | IngredientController | 보관법 목록 |
+| 79 | cook | GET | /api/cook/ingredients/{ingredientId}/preparation | IngredientController | 손질법 목록 |
+| 80 | cook | POST | /api/cook/admin/ingredients/groups | AdminIngredientController | 재료 그룹 등록 |
+| 81 | cook | POST | /api/cook/admin/ingredients | AdminIngredientController | 재료 등록 |
+| 82 | cook | PUT | /api/cook/admin/ingredients/groups/{id} | AdminIngredientController | 재료 그룹 수정 |
+| 83 | cook | DELETE | /api/cook/admin/ingredients/groups/{id} | AdminIngredientController | 재료 그룹 삭제 |
+| 84 | cook | PUT | /api/cook/admin/ingredients/{id} | AdminIngredientController | 재료 수정 |
+| 85 | cook | DELETE | /api/cook/admin/ingredients/{id} | AdminIngredientController | 재료 삭제 |
+| 86 | cook | POST | /api/cook/admin/ingredients/storage | AdminIngredientController | 보관법 등록 |
+| 87 | cook | POST | /api/cook/admin/ingredients/preparation | AdminIngredientController | 손질법 등록 |
+| 88 | cook | PUT | /api/cook/admin/ingredients/storage/{id} | AdminIngredientController | 보관법 수정 |
+| 89 | cook | PUT | /api/cook/admin/ingredients/preparation/{id} | AdminIngredientController | 손질법 수정 |
+| 90 | cook | POST | /api/cook/admin/ingredients/upload-image | AdminIngredientController | 재료 이미지 업로드 |
+| 91 | cook | DELETE | /api/cook/admin/ingredients/storage/{id} | AdminIngredientController | 보관법 삭제 |
+| 92 | cook | DELETE | /api/cook/admin/ingredients/preparation/{id} | AdminIngredientController | 손질법 삭제 |
 
 ---
 
@@ -118,9 +112,9 @@
 | auth | 9 | 인증(OAuth state, 소셜 로그인, 로그아웃, 토큰 갱신, 테스트) |
 | common | 9 | 공통코드 조회/관리 |
 | member | 16 | 회원, 팔로우, 문의 |
-| cook | 64 | 레시피, 댓글, 북마크, 조회기록, 즐겨찾기, 카테고리, 크리에이터, 검색, 추천, 재료, 관리자 재료 |
+| cook | 58 | 레시피, 댓글, 북마크, 조회기록, 즐겨찾기, 크리에이터, 검색, 추천, 재료, 관리자 재료 |
 
-**총 98개 엔드포인트**
+**총 96개 엔드포인트**
 
 ---
 

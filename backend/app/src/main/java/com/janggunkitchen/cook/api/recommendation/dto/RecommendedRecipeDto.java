@@ -1,11 +1,11 @@
 package com.janggunkitchen.cook.api.recommendation.dto;
 
+import com.janggunkitchen.common.domain.entity.Member;
 import com.janggunkitchen.cook.api.recipe.domain.entity.Recipe;
+import com.janggunkitchen.cook.api.recipe.dto.RecipeCategoryDto;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import com.janggunkitchen.cook.api.recipe.dto.RecipeCategoryDto;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,39 +27,23 @@ public class RecommendedRecipeDto {
     private Integer favoriteCount;
     private LocalDateTime createdAt;
     private String recommendReason; // 추천 이유
-    
-    public static RecommendedRecipeDto from(Recipe recipe, String recommendReason) {
+
+    public static RecommendedRecipeDto from(Recipe recipe, String recommendReason, Integer favoriteCount, Member member) {
         return RecommendedRecipeDto.builder()
                 .id(recipe.getId())
                 .title(recipe.getTitle())
                 .description(recipe.getDescription())
                 .thumbnail(recipe.getThumbnail())
                 .memberId(recipe.getMemberId())
+                .memberNickname(member != null ? member.getNickname() : null)
+                .memberProfileImage(member != null ? member.getProfileImage() : null)
                 .hits(recipe.getHits())
                 .categories(recipe.getRecipeCategories().stream()
                         .map(RecipeCategoryDto::fromEntity)
                         .collect(Collectors.toList()))
                 .commentCount(recipe.getRecipeComments().size())
-                .createdAt(recipe.getCreatedAt())
-                .recommendReason(recommendReason)
-                .build();
-    }
-    
-    public static RecommendedRecipeDto from(Recipe recipe, String recommendReason, Integer favoriteCount) {
-        RecommendedRecipeDto dto = from(recipe, recommendReason);
-        return RecommendedRecipeDto.builder()
-                .id(dto.getId())
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .thumbnail(dto.getThumbnail())
-                .memberId(dto.getMemberId())
-                .memberNickname(dto.getMemberNickname())
-                .memberProfileImage(dto.getMemberProfileImage())
-                .hits(dto.getHits())
-                .categories(dto.getCategories())
-                .commentCount(dto.getCommentCount())
                 .favoriteCount(favoriteCount)
-                .createdAt(dto.getCreatedAt())
+                .createdAt(recipe.getCreatedAt())
                 .recommendReason(recommendReason)
                 .build();
     }

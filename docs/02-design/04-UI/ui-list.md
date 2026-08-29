@@ -44,9 +44,8 @@
 | 12 | /admin/ingredient-group/register | adminIngredientGroupRegister | IngredientGroupRegister.vue | 재료 그룹 등록 |
 | 13 | /admin/ingredient/register | adminIngredientRegister | IngredientRegister.vue | 재료 등록(관리자) |
 | 14 | /admin/ingredient-management/register | adminIngredientManagementRegister | IngredientManagementRegister.vue | 재료 관리용 등록(저장법·손질법 등) |
-| 15 | /admin/ingredient-requests | adminIngredientRequestList | IngredientRequestList.vue | 재료 추가 요청 목록·상태 처리 |
-| 16 | /admin/inquiries | adminInquiryList | AdminInquiryList.vue | 1:1 문의 목록·답변 처리 |
-| 17 | /admin/common-codes | adminCommonCodeManagement | CommonCodeManagement.vue | 공통코드 관리 |
+| 15 | /admin/inquiries | adminInquiryList | AdminInquiryList.vue | 1:1 문의 목록·답변 처리 |
+| 16 | /admin/common-codes | adminCommonCodeManagement | CommonCodeManagement.vue | 공통코드 관리 |
 
 ---
 

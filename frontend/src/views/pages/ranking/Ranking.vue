@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import Tabs from 'primevue/tabs';
-import TabList from 'primevue/tablist';
-import Tab from 'primevue/tab';
-import TabPanels from 'primevue/tabpanels';
-import TabPanel from 'primevue/tabpanel';
+import Button from 'primevue/button';
+import Skeleton from 'primevue/skeleton';
 import { getPopularRecipes, toggleFavorite as toggleFavoriteApi } from '@/api/recipeApi';
 import { getRecipeBooks, getBookmarksByRecipeBook } from '@/api/bookmarkApi';
 import RecipeGridCard from '@/components/recipe/RecipeGridCard.vue';
 import BookmarkDialog from '@/components/bookmark/BookmarkDialog.vue';
 import { useAuthStore } from '@/stores/authStore';
-import type { PopularRecipeItem, RecipeCookingTip } from '@/types/recipe';
+import type { PopularRecipeItem, RecipeCookingTip, TrendStatus } from '@/types/recipe';
 import type { RecipeGridItem } from '@/types/recipe';
 import { useAppToast } from '@/utils/toast';
+import { resolveProfileImage, resolveRecipeImage } from '@/utils/image';
 
 /** cookingTips에서 요리 시간/인분 추출 (Category와 동일) */
 function extractCookingTime(cookingTips: RecipeCookingTip[] | undefined): string | null {
@@ -27,7 +25,7 @@ function extractServings(cookingTips: RecipeCookingTip[] | undefined): string | 
     return tip?.detailName ?? null;
 }
 
-/** RecipeGridCard에 넘길 레시피 (cookingTime/servings 포함, 전체 레시피 화면과 동일 형태) */
+/** RecipeGridCard에 넘길 레시피 (cookingTime/servings 포함) */
 function getCardRecipe(item: PopularRecipeItem): RecipeGridItem {
     const r = item.recipe;
     return {
@@ -43,7 +41,8 @@ const authStore = useAuthStore();
 const { showError, showWarn } = useAppToast();
 
 const RANKING_LIMIT = 50;
-const INITIAL_DISPLAY_COUNT = 12; // 1열 기준 첫 화면 분량
+/** 포디엄(1~3) 제외, 리스트 첫 화면 분량 */
+const INITIAL_DISPLAY_COUNT = 12;
 const LOAD_MORE_STEP = 12;
 type PeriodValue = '24h' | '7d' | '30d';
 
@@ -55,18 +54,19 @@ const selectedPeriod = ref<PeriodValue>('24h');
 const calculatedAt = ref<string | null>(null);
 const skipLoadFromWatch = ref(false);
 
-const displayedRecipes = computed(() => popularRecipes.value.slice(0, displayCount.value));
-const hasMoreRecipes = computed(() => displayCount.value < popularRecipes.value.length);
+const podiumRecipes = computed(() => popularRecipes.value.filter((item) => item.rank >= 1 && item.rank <= 3).slice(0, 3));
+const listRecipesAll = computed(() => popularRecipes.value.filter((item) => item.rank > 3));
+const displayedListRecipes = computed(() => listRecipesAll.value.slice(0, displayCount.value));
+const hasMoreRecipes = computed(() => displayCount.value < listRecipesAll.value.length);
 
-// 북마크 Dialog 및 카드 상태 (Category와 동일)
 const bookmarkDialogVisible = ref(false);
 const bookmarkRecipeId = ref<number | null>(null);
 const bookmarkedRecipeIds = ref<Set<number>>(new Set());
 
 const periodOptions: { label: string; value: PeriodValue }[] = [
-    { label: '일간 랭킹', value: '24h' },
-    { label: '주간 랭킹', value: '7d' },
-    { label: '월간 랭킹', value: '30d' }
+    { label: '일간', value: '24h' },
+    { label: '주간', value: '7d' },
+    { label: '월간', value: '30d' }
 ];
 
 function formatCalculatedAt(isoString?: string): string {
@@ -102,32 +102,69 @@ async function loadPopularRecipes() {
 }
 
 function loadMoreRecipes() {
-    displayCount.value = Math.min(displayCount.value + LOAD_MORE_STEP, popularRecipes.value.length);
+    displayCount.value = Math.min(displayCount.value + LOAD_MORE_STEP, listRecipesAll.value.length);
 }
 
-// 기간(탭) 변경 시 데이터 로드 및 URL 쿼리 동기화 (쿼리 복원으로 인한 변경 시에는 onMounted/route watch에서 이미 로드하므로 스킵)
-// 같은 path에서 query만 바꿀 때: path 명시 + 새 query 객체 + nextTick으로 URL이 갱신되도록 함 (Vue Router 동작)
-watch(selectedPeriod, (period) => {
-    if (skipLoadFromWatch.value) {
-        skipLoadFromWatch.value = false;
-        return;
-    }
+function changePeriod(period: PeriodValue) {
+    if (selectedPeriod.value === period) return;
+    selectedPeriod.value = period;
     loadPopularRecipes();
+    skipLoadFromWatch.value = true;
     const nextQuery = { ...route.query, period };
     nextTick(() => {
         router.replace({ path: '/ranking', query: nextQuery });
+        nextTick(() => {
+            skipLoadFromWatch.value = false;
+        });
     });
-});
-
-/** 1~3위 메달 이모지 (금·은·동) */
-function getRankMedal(rank: number): string {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return '';
 }
 
-/** 카드용 대표 카테고리 라벨 */
+function rankBadgeClass(rank: number): string {
+    if (rank === 1) return 'rank-badge--gold';
+    if (rank === 2) return 'rank-badge--silver';
+    if (rank === 3) return 'rank-badge--bronze';
+    return 'rank-badge--neutral';
+}
+
+type TrendView = { kind: TrendStatus; text: string; title?: string };
+
+function getTrendView(item: PopularRecipeItem): TrendView {
+    const prev = item.previousRank;
+    switch (item.trendStatus) {
+        case 'UP': {
+            const delta = prev != null && prev > item.rank ? prev - item.rank : null;
+            return {
+                kind: 'UP',
+                text: delta != null ? `↑${delta}` : '↑',
+                title: prev != null ? `이전 ${prev}위` : undefined
+            };
+        }
+        case 'DOWN': {
+            const delta = prev != null && prev < item.rank ? item.rank - prev : null;
+            return {
+                kind: 'DOWN',
+                text: delta != null ? `↓${delta}` : '↓',
+                title: prev != null ? `이전 ${prev}위` : undefined
+            };
+        }
+        case 'NEW':
+            return { kind: 'NEW', text: 'NEW' };
+        case 'SAME':
+        default:
+            return { kind: 'SAME', text: '—' };
+    }
+}
+
+function getRowMetaParts(item: PopularRecipeItem): string[] {
+    const card = getCardRecipe(item);
+    const parts: string[] = [];
+    if (card.cookingTime) parts.push(card.cookingTime);
+    if (card.servings) parts.push(card.servings);
+    const cat = getCategoryLabel(item);
+    if (cat) parts.push(cat);
+    return parts;
+}
+
 function getCategoryLabel(item: PopularRecipeItem): string | null {
     const first = item.recipe.categories?.[0];
     return first?.detailName ?? first?.codeName ?? null;
@@ -188,7 +225,6 @@ async function loadBookmarkedRecipeIds(): Promise<void> {
 function initPeriodFromQuery() {
     const period = route.query.period as string | undefined;
     if (period === '24h' || period === '7d' || period === '30d') {
-        skipLoadFromWatch.value = true;
         selectedPeriod.value = period;
     }
 }
@@ -199,19 +235,15 @@ onMounted(() => {
     loadBookmarkedRecipeIds();
 });
 
-// URL 쿼리 변경 시(뒤로가기 등) 기간 복원 후, 실제로 기간이 바뀐 경우에만 로드 (탭 클릭으로 인한 URL 변경 시 이중 로드 방지)
 watch(
     () => route.query.period,
     () => {
+        if (skipLoadFromWatch.value) return;
         const prev = selectedPeriod.value;
         initPeriodFromQuery();
         if (selectedPeriod.value !== prev) {
             loadPopularRecipes();
         }
-        // 다음 탭 클릭에서 URL 갱신이 스킵되지 않도록 플래그 해제 (initPeriodFromQuery에서 true로 설정됨)
-        nextTick(() => {
-            skipLoadFromWatch.value = false;
-        });
     }
 );
 </script>
@@ -219,68 +251,142 @@ watch(
 <template>
     <div class="page-container page-container--card">
         <div class="ranking-page">
-            <section class="ranking-header">
-                <div class="ranking-subtitle">
-                    <i class="fa-solid fa-ranking-star ranking-subtitle__icon" aria-hidden="true"></i>
-                    <span class="ranking-subtitle__text">지금 많은 사람들이 보고 있는 레시피를 기간별로 확인하세요.</span>
+            <header class="ranking-header">
+                <div class="ranking-header__intro">
+                    <h1 class="ranking-title">랭킹</h1>
+                    <p class="ranking-desc">지금 많은 사람들이 보고 있는 레시피를 기간별로 확인하세요.</p>
                 </div>
-                <div class="ranking-tabs-wrap">
-                    <Tabs v-model:value="selectedPeriod" class="ranking-tabs">
-                        <TabList>
-                            <Tab v-for="option in periodOptions" :key="option.value" :value="option.value">
-                                {{ option.label }}
-                            </Tab>
-                        </TabList>
-                        <p v-if="displayCalculatedAt" class="ranking-calculated-at">기준: {{ displayCalculatedAt }} 갱신</p>
-                        <TabPanels>
-                            <TabPanel v-for="option in periodOptions" :key="option.value" :value="option.value">
-                                <div class="ranking-content">
-                                    <div v-if="loading" class="loading-state">
-                                        <i class="pi pi-spinner pi-spin text-4xl text-primary-500"></i>
-                                        <p class="mt-4 text-gray-600">랭킹을 불러오는 중...</p>
-                                    </div>
+                <div class="ranking-header__controls">
+                    <div class="period-segment" role="tablist" aria-label="랭킹 기간">
+                        <button
+                            v-for="option in periodOptions"
+                            :key="option.value"
+                            type="button"
+                            role="tab"
+                            :aria-selected="selectedPeriod === option.value"
+                            :class="['period-segment__btn', { 'is-active': selectedPeriod === option.value }]"
+                            @click="changePeriod(option.value)"
+                        >
+                            {{ option.label }}
+                        </button>
+                    </div>
+                    <p v-if="displayCalculatedAt" class="ranking-calculated-at">기준: {{ displayCalculatedAt }} 갱신</p>
+                </div>
+            </header>
 
-                                    <div v-else-if="loadError" class="error-state">
-                                        <i class="pi pi-exclamation-triangle text-6xl text-amber-500 mb-4"></i>
-                                        <p class="text-gray-700 text-lg mb-4">랭킹을 불러오는데 실패했습니다.</p>
-                                        <button type="button" class="retry-button" @click="loadPopularRecipes">다시 시도</button>
-                                    </div>
+            <div class="ranking-content">
+                <div v-if="loading" class="ranking-skeleton" aria-busy="true" aria-label="랭킹 불러오는 중">
+                    <div class="ranking-skeleton__podium">
+                        <Skeleton v-for="i in 3" :key="`podium-${i}`" height="280px" border-radius="12px" />
+                    </div>
+                    <div class="ranking-skeleton__list">
+                        <Skeleton v-for="i in 4" :key="`row-${i}`" height="88px" border-radius="12px" />
+                    </div>
+                </div>
 
-                                    <div v-else-if="popularRecipes.length > 0" class="ranking-list-wrap">
-                                        <div class="recipe-grid ranking-grid">
-                                            <div v-for="item in displayedRecipes" :key="item.recipe.id" class="ranking-card-wrap">
-                                                <span :class="['rank-badge rank-badge--card', item.rank === 1 ? 'rank-1' : item.rank === 2 ? 'rank-2' : item.rank === 3 ? 'rank-3' : 'rank-other']">
-                                                    <span v-if="getRankMedal(item.rank)" class="rank-medal-emoji" aria-hidden="true">{{ getRankMedal(item.rank) }}</span>
-                                                    <span v-else class="rank-medal-emoji" aria-hidden="true">🏅</span>
-                                                    <span class="rank-text">{{ item.rank }}위</span>
-                                                </span>
-                                                <RecipeGridCard
-                                                    :recipe="getCardRecipe(item)"
-                                                    :category-label="getCategoryLabel(item)"
-                                                    :is-bookmarked="bookmarkedRecipeIds.has(item.recipe.id)"
-                                                    show-bookmark
-                                                    show-comment-count
-                                                    @click="viewRecipe"
-                                                    @favorite="toggleFavorite"
-                                                    @bookmark="bookmarkRecipe"
-                                                    @scroll-to-comments="scrollToComments"
-                                                />
-                                            </div>
-                                        </div>
-                                        <button v-if="hasMoreRecipes" type="button" class="ranking-btn-more" @click="loadMoreRecipes">더보기</button>
-                                    </div>
+                <div v-else-if="loadError" class="error-state">
+                    <p class="error-state__msg">랭킹을 불러오는데 실패했습니다.</p>
+                    <button type="button" class="retry-button" @click="loadPopularRecipes">다시 시도</button>
+                </div>
 
-                                    <div v-else class="empty-state">
-                                        <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-                                        <p class="text-gray-500 text-lg mb-2">아직 랭킹 데이터가 없습니다.</p>
-                                        <p class="text-gray-400 text-sm">다른 기간(일간/주간/월간)을 선택해 보세요.</p>
+                <div v-else-if="popularRecipes.length > 0" class="ranking-list-wrap">
+                    <!-- TOP 1~3 포디엄 -->
+                    <div v-if="podiumRecipes.length" class="recipe-grid ranking-podium">
+                        <div
+                            v-for="item in podiumRecipes"
+                            :key="item.recipe.id"
+                            :class="['ranking-podium__slot', `ranking-podium__slot--${item.rank}`]"
+                        >
+                            <span :class="['rank-badge', rankBadgeClass(item.rank)]" aria-hidden="true">{{ item.rank }}</span>
+                            <template v-for="trend in [getTrendView(item)]" :key="`${item.recipe.id}-trend`">
+                                <span
+                                    v-if="trend.kind !== 'SAME'"
+                                    :class="['rank-trend', `rank-trend--${trend.kind.toLowerCase()}`]"
+                                    :title="trend.title"
+                                >
+                                    {{ trend.text }}
+                                </span>
+                            </template>
+                            <RecipeGridCard
+                                :recipe="getCardRecipe(item)"
+                                :category-label="getCategoryLabel(item)"
+                                :is-bookmarked="bookmarkedRecipeIds.has(item.recipe.id)"
+                                show-bookmark
+                                show-comment-count
+                                @click="viewRecipe"
+                                @favorite="toggleFavorite"
+                                @bookmark="bookmarkRecipe"
+                                @scroll-to-comments="scrollToComments"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- 4위~ 압축 행 -->
+                    <ul v-if="displayedListRecipes.length" class="ranking-row-list" aria-label="4위 이하 랭킹">
+                        <li
+                            v-for="item in displayedListRecipes"
+                            :key="item.recipe.id"
+                            class="ranking-row"
+                            @click="viewRecipe(item.recipe.id)"
+                        >
+                            <span class="ranking-row__rank" :aria-label="`${item.rank}위`">{{ item.rank }}</span>
+                            <div class="ranking-row__thumb">
+                                <img :src="resolveRecipeImage(item.recipe.thumbnail)" :alt="item.recipe.title" />
+                            </div>
+                            <div class="ranking-row__body">
+                                <h3 class="ranking-row__title">{{ item.recipe.title }}</h3>
+                                <p v-if="getRowMetaParts(item).length" class="ranking-row__meta">
+                                    {{ getRowMetaParts(item).join(' · ') }}
+                                </p>
+                                <div class="ranking-row__footer">
+                                    <div class="ranking-row__author">
+                                        <img
+                                            v-if="item.recipe.memberProfileImage"
+                                            :src="resolveProfileImage(item.recipe.memberProfileImage)"
+                                            alt=""
+                                            class="ranking-row__avatar"
+                                        />
+                                        <span v-else class="ranking-row__avatar ranking-row__avatar--placeholder" aria-hidden="true">
+                                            <i class="pi pi-user"></i>
+                                        </span>
+                                        <span class="ranking-row__name">{{ item.recipe.memberNickname || item.recipe.memberName }}</span>
                                     </div>
+                                    <template v-for="trend in [getTrendView(item)]" :key="`${item.recipe.id}-row-trend`">
+                                        <span :class="['rank-trend', `rank-trend--${trend.kind.toLowerCase()}`]" :title="trend.title">
+                                            {{ trend.text }}
+                                        </span>
+                                    </template>
                                 </div>
-                            </TabPanel>
-                        </TabPanels>
-                    </Tabs>
+                            </div>
+                            <div class="ranking-row__actions" @click.stop>
+                                <Button
+                                    :icon="item.recipe.isFavorite ? 'pi pi-heart-fill' : 'pi pi-heart'"
+                                    :class="['ranking-row__action', { 'is-on': item.recipe.isFavorite }]"
+                                    rounded
+                                    text
+                                    aria-label="찜"
+                                    @click="toggleFavorite(item.recipe.id)"
+                                />
+                                <Button
+                                    :icon="bookmarkedRecipeIds.has(item.recipe.id) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+                                    :class="['ranking-row__action', { 'is-on': bookmarkedRecipeIds.has(item.recipe.id) }]"
+                                    rounded
+                                    text
+                                    aria-label="북마크"
+                                    @click="bookmarkRecipe(item.recipe.id)"
+                                />
+                            </div>
+                        </li>
+                    </ul>
+
+                    <button v-if="hasMoreRecipes" type="button" class="ranking-btn-more" @click="loadMoreRecipes">더보기</button>
                 </div>
-            </section>
+
+                <div v-else class="empty-state">
+                    <p class="empty-state__msg">아직 랭킹 데이터가 없습니다.</p>
+                    <p class="empty-state__hint">다른 기간(일간/주간/월간)을 선택해 보세요.</p>
+                </div>
+            </div>
         </div>
         <BookmarkDialog v-model:visible="bookmarkDialogVisible" :recipe-id="bookmarkRecipeId" @bookmarked="onBookmarked" />
     </div>
@@ -300,138 +406,108 @@ watch(
 }
 
 .ranking-header {
-    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 769px) {
     .ranking-header {
-        margin-bottom: 20px;
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
     }
 }
 
-.ranking-subtitle {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin: 0 0 16px 0;
-    padding: 12px 14px;
-    background: linear-gradient(135deg, var(--primary-50, #f0f9ff) 0%, var(--primary-100, #e0f2fe) 100%);
-    border: 1px solid var(--primary-200, #bae6fd);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-:root.dark .ranking-subtitle,
-:global(.dark) .ranking-subtitle {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-500) 15%, transparent) 0%, color-mix(in srgb, var(--primary-500) 8%, transparent) 100%);
-    border-color: var(--primary-700, rgba(255, 255, 255, 0.1));
-    box-shadow: none;
-}
-
-.ranking-subtitle__icon {
-    flex-shrink: 0;
-    font-size: 1.1rem;
-    color: var(--primary-600, var(--primary-color));
-    margin-top: 0.1rem;
-}
-
-.ranking-subtitle__text {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--primary-900, var(--text-color));
-    letter-spacing: -0.02em;
-    line-height: 1.45;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.ranking-header__intro {
     min-width: 0;
     flex: 1;
 }
 
+.ranking-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+    line-height: 1.25;
+}
+
 @media (min-width: 769px) {
-    .ranking-subtitle {
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-        padding: 14px 18px;
-    }
-
-    .ranking-subtitle__icon {
-        font-size: 1.25rem;
-        margin-top: 0;
-    }
-
-    .ranking-subtitle__text {
-        font-size: 1rem;
-        -webkit-line-clamp: unset;
-        line-clamp: unset;
-        display: block;
-        overflow: visible;
+    .ranking-title {
+        font-size: 1.75rem;
     }
 }
 
-.ranking-tabs-wrap {
-    margin-bottom: 0;
+.ranking-desc {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--text-color-secondary);
 }
 
-.ranking-tabs {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-}
-
-/* 탭: 리스트 전체 너비에 3등분 + 인디케이터(ink bar)가 각 탭 영역과 정렬되도록 */
-.ranking-tabs :deep(.p-tablist) {
-    width: 100%;
-    margin-bottom: 0;
-}
-
-.ranking-tabs :deep(.p-tablist-content) {
-    width: 100%;
-    overflow: hidden;
-}
-
-.ranking-tabs :deep(.p-tablist-tab-list) {
+.ranking-header__controls {
     display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     width: 100%;
-    align-items: stretch;
-    position: relative;
+    max-width: 320px;
 }
 
-.ranking-tabs :deep(.p-tab) {
-    flex: 1 1 0;
-    min-width: 0;
-    justify-content: center;
-    text-align: center;
-    font-size: 0.8125rem;
-    padding: 0.65rem 0.35rem;
-}
-
-@media (min-width: 480px) {
-    .ranking-tabs :deep(.p-tab) {
-        font-size: 0.875rem;
-        padding: 0.75rem 0.5rem;
+@media (min-width: 769px) {
+    .ranking-header__controls {
+        width: auto;
+        min-width: 280px;
+        align-items: flex-end;
     }
 }
 
-.ranking-tabs :deep(.p-tabpanel) {
-    padding: 0;
+.period-segment {
+    display: flex;
+    gap: 0.375rem;
+    width: 100%;
+}
+
+.period-segment__btn {
+    flex: 1 1 0;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    background: var(--surface-100, #f3f4f6);
+    color: var(--text-color-secondary);
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.period-segment__btn:hover {
+    background: var(--surface-200, #e5e7eb);
+}
+
+.period-segment__btn.is-active {
+    background: var(--primary-color, #f97316);
+    color: #fff;
 }
 
 .ranking-calculated-at {
+    margin: 0;
     font-size: 0.7rem;
     color: var(--text-color-secondary);
-    margin: 6px 0 10px 0;
-    text-align: right;
     line-height: 1.35;
+    text-align: right;
 }
 
 @media (min-width: 640px) {
     .ranking-calculated-at {
         font-size: 0.75rem;
-        margin-bottom: 12px;
     }
 }
 
@@ -439,21 +515,272 @@ watch(
     min-height: 200px;
 }
 
-.loading-state {
+.ranking-skeleton__podium {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 769px) {
+    .ranking-skeleton__podium {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.ranking-skeleton__list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
+    gap: 0.75rem;
 }
 
 .ranking-list-wrap {
     margin-top: 0;
 }
 
-/* 1열·큰 썸네일: _recipe-card-list.scss 의 .recipe-grid.ranking-grid 와 함께 사용 */
-.ranking-grid {
-    margin-top: 0.35rem;
+.ranking-podium__slot {
+    position: relative;
+    container-type: inline-size;
+    container-name: recipe-card;
+}
+
+.rank-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+}
+
+.rank-badge--gold {
+    background: #ca8a04;
+}
+
+.rank-badge--silver {
+    background: #6b7280;
+}
+
+.rank-badge--bronze {
+    background: #c2410c;
+}
+
+.rank-badge--neutral {
+    background: #ea580c;
+}
+
+.ranking-podium__slot > .rank-trend {
+    position: absolute;
+    top: 10px;
+    left: 46px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.rank-trend {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 1.5rem;
+    padding: 0 0.4rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--surface-border, #e5e7eb);
+}
+
+.rank-trend--up {
+    color: #16a34a;
+}
+
+.rank-trend--down {
+    color: #dc2626;
+}
+
+.rank-trend--new {
+    color: var(--primary-color, #f97316);
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+}
+
+.rank-trend--same {
+    color: var(--text-color-secondary);
+    font-weight: 600;
+}
+
+.ranking-row-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+}
+
+.ranking-row {
+    display: grid;
+    grid-template-columns: 2rem 4.5rem minmax(0, 1fr) auto;
+    gap: 0.65rem;
+    align-items: center;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--surface-border, #e5e7eb);
+    border-radius: 12px;
+    background: var(--surface-card, #fff);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.ranking-row:hover {
+    border-color: color-mix(in srgb, var(--primary-color, #f97316) 35%, var(--surface-border, #e5e7eb));
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+    .ranking-row {
+        grid-template-columns: 1.75rem 3.75rem minmax(0, 1fr);
+        grid-template-rows: auto auto;
+    }
+
+    .ranking-row__actions {
+        grid-column: 2 / -1;
+        justify-content: flex-end;
+    }
+}
+
+.ranking-row__rank {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    text-align: center;
+    line-height: 1;
+}
+
+.ranking-row__thumb {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff7ed;
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .ranking-row__thumb {
+        width: 3.75rem;
+        height: 3.75rem;
+    }
+}
+
+.ranking-row__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.ranking-row__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.ranking-row__title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ranking-row__meta {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-row__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.15rem;
+}
+
+.ranking-row__author {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.ranking-row__avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.ranking-row__avatar--placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-100, #f3f4f6);
+    color: var(--text-color-secondary);
+    font-size: 0.65rem;
+}
+
+.ranking-row__name {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-row__footer .rank-trend {
+    background: var(--surface-50, #fafafa);
+    flex-shrink: 0;
+}
+
+.ranking-row__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.ranking-row__action {
+    width: 2rem !important;
+    height: 2rem !important;
+    color: var(--text-color-secondary) !important;
+}
+
+.ranking-row__action.is-on {
+    color: var(--primary-color, #f97316) !important;
 }
 
 .ranking-btn-more {
@@ -466,7 +793,7 @@ watch(
     color: var(--text-color);
     font-size: 1rem;
     font-weight: 600;
-    border: 2px solid var(--surface-border);
+    border: 1px solid var(--surface-border);
     border-radius: 12px;
     cursor: pointer;
     transition:
@@ -476,99 +803,13 @@ watch(
 }
 
 .ranking-btn-more:hover {
-    background: var(--primary-50, #f0f9ff);
-    border-color: var(--primary-300, #7dd3fc);
+    background: #fff7ed;
+    border-color: color-mix(in srgb, var(--primary-color, #f97316) 40%, var(--surface-border));
     transform: translateY(-1px);
 }
 
-.ranking-card-wrap {
-    position: relative;
-    container-type: inline-size;
-    container-name: recipe-card;
-}
-
-.rank-badge.rank-badge--card {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 2;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 48px;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    pointer-events: none;
-    overflow: hidden;
-}
-
-.rank-badge.rank-badge--card .pi {
-    font-size: 0.85rem;
-}
-
-.rank-badge.rank-badge--card .rank-medal-emoji {
-    margin-right: 4px;
-    font-size: 1.1em;
-    line-height: 1;
-}
-
-/* 1~3위: 금·은·동 메달 톤 + 은은한 반짝임 */
-.rank-1,
-.rank-2,
-.rank-3 {
-    position: relative;
-}
-
-.rank-1::after,
-.rank-2::after,
-.rank-3::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent 0%, transparent 40%, rgba(255, 255, 255, 0.25) 50%, transparent 60%, transparent 100%);
-    background-size: 200% 100%;
-    animation: rank-shine 3.5s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes rank-shine {
-    0% {
-        background-position: 100% 0;
-    }
-    28% {
-        background-position: -100% 0;
-    }
-
-    28.01%,
-    100% {
-        background-position: -100% 0;
-    }
-}
-
-.rank-1 {
-    background: linear-gradient(135deg, #fde047, #d4af37);
-}
-
-.rank-2 {
-    background: linear-gradient(135deg, #d1d5db, #6b7280);
-}
-
-.rank-3 {
-    background: linear-gradient(135deg, #d97706, #b45309);
-}
-
-/* 4위~ : 앱 톤에 맞춘 밝은 오렌지 */
-.rank-other {
-    background: linear-gradient(135deg, #f97316, #ea580c);
-    color: white;
-}
-
-.error-state {
+.error-state,
+.empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -577,33 +818,46 @@ watch(
     padding: 48px 24px;
 }
 
+.error-state__msg,
+.empty-state__msg {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.empty-state__hint {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+}
+
 .retry-button {
     padding: 10px 24px;
     border-radius: 8px;
     font-weight: 600;
-    background: var(--primary-500);
+    background: var(--primary-color, #f97316);
     color: white;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: filter 0.2s;
 }
 
 .retry-button:hover {
-    background: var(--primary-600);
-}
-
-.empty-state {
-    text-align: center;
-    padding: 48px 24px;
+    filter: brightness(0.95);
 }
 
 @media (max-width: 768px) {
-    .rank-badge.rank-badge--card {
+    .rank-badge {
         top: 8px;
         left: 8px;
-        min-width: 42px;
-        height: 28px;
-        font-size: 0.875rem;
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.8125rem;
+    }
+
+    .ranking-podium__slot > .rank-trend {
+        top: 8px;
+        left: 40px;
     }
 }
 </style>

@@ -1,11 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Galleria from 'primevue/galleria';
 import type { RecipeImage } from '@/types/recipe';
 import { resolveMediaUrl } from '@/utils/image';
 
-defineProps<{
+const props = defineProps<{
     images: RecipeImage[];
 }>();
+
+/** 메인 이미지 제외. 남은 게 없으면(또는 원래 1장뿐이면) 섹션 자체를 숨김 */
+const galleryImages = computed(() => {
+    const list = props.images || [];
+    if (list.length <= 1) return [];
+
+    const isMain = (img: RecipeImage & { mainImage?: boolean }) => !!(img.mainImage ?? img.isMainImage);
+    const hasExplicitMain = list.some((img) => isMain(img as RecipeImage & { mainImage?: boolean }));
+
+    if (hasExplicitMain) {
+        return list.filter((img) => !isMain(img as RecipeImage & { mainImage?: boolean }));
+    }
+    // 플래그가 없으면 첫 장을 메인으로 간주
+    return list.slice(1);
+});
 
 const galleriaResponsiveOptions = [
     { breakpoint: '1400px', numVisible: 5 },
@@ -17,12 +33,12 @@ const galleriaResponsiveOptions = [
 </script>
 
 <template>
-    <div v-if="images && images.length > 0" class="recipe-section-card bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 mb-6 md:rounded-2xl md:mb-8">
-        <h2 class="recipe-section-card__title text-xl font-bold text-gray-800 mb-4 flex items-center sm:text-2xl md:text-3xl md:mb-8">
-            <i class="pi pi-images mr-2 sm:mr-3 text-orange-600 shrink-0"></i>
+    <div v-if="galleryImages.length > 0" class="recipe-section-card">
+        <h2 class="recipe-section-card__title">
+            <i class="pi pi-images shrink-0"></i>
             이미지 갤러리
         </h2>
-        <Galleria :value="images" :num-visible="5" :responsive-options="galleriaResponsiveOptions" thumbnails-position="bottom" container-class="galleria-thumbnail-container" show-item-navigators show-thumbnail-navigators>
+        <Galleria :value="galleryImages" :num-visible="5" :responsive-options="galleriaResponsiveOptions" thumbnails-position="bottom" container-class="galleria-thumbnail-container" show-item-navigators show-thumbnail-navigators>
             <template #item="slotProps">
                 <img :src="resolveMediaUrl(slotProps.item.url)" :alt="slotProps.item.fileName || '갤러리 이미지'" class="galleria-main-img w-full block object-contain rounded-lg" />
             </template>
@@ -37,6 +53,7 @@ const galleriaResponsiveOptions = [
 .galleria-main-img {
     max-height: min(50vh, 280px);
     width: 100%;
+    background: #fff7ed;
 }
 
 @media (min-width: 480px) {
@@ -55,7 +72,6 @@ const galleriaResponsiveOptions = [
     max-width: 100%;
 }
 
-/* 모바일: 슬라이드 좌우 버튼 터치 영역 확대 */
 :deep([data-pc-group-section='itemnavigator']) {
     width: 2.75rem;
     height: 2.75rem;

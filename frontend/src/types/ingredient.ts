@@ -31,21 +31,4 @@ export interface IngredientPreparation {
     updatedAt: string;
 }
 
-export interface IngredientRequest {
-    ingredientName: string;
-    requestType: 'STORAGE' | 'PREPARATION';
-    message?: string;
-}
-
-export interface IngredientRequestResponse {
-    id: number;
-    ingredientName: string;
-    requestType: string;
-    message?: string;
-    memberId?: number;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-}
-
 export type IngredientType = 'storage' | 'preparation';

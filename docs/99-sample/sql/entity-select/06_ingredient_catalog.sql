@@ -1,7 +1,6 @@
 -- =============================================================================
--- 식재료 마스터·저장·요청 (cook-service / ingredient 도메인)
--- IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation,
--- IngredientRequest
+-- 식재료 마스터·저장 (cook / ingredient 도메인)
+-- IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation
 -- 대상 DB: PostgreSQL
 -- =============================================================================
 
@@ -51,16 +50,3 @@ SELECT id,
        created_at,
        updated_at
 FROM ingredient_preparation;
-
--- -----------------------------------------------------------------------------
--- Entity: IngredientRequest → ingredient_request
--- -----------------------------------------------------------------------------
-SELECT id,
-       ingredient_name,
-       request_type,
-       message,
-       member_id,
-       status,
-       created_at,
-       updated_at
-FROM ingredient_request;
