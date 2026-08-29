@@ -2,7 +2,6 @@
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import PopularRecipes from '@/components/dashboard/PopularRecipes.vue';
-import CategorySections from '@/components/dashboard/CategorySections.vue';
 import RecentViews from '@/components/dashboard/RecentViews.vue';
 import TodayRecommendations from '@/components/dashboard/TodayRecommendations.vue';
 import RecommendedCreators from '@/components/dashboard/RecommendedCreators.vue';
@@ -78,21 +77,14 @@ const greetingTitle = computed(() => {
                 </div>
             </section>
 
-            <!-- 4. 카테고리 섹션 (보조 섹션) -->
-            <section class="dashboard-section secondary-section">
-                <div class="section-wrapper">
-                    <CategorySections />
-                </div>
-            </section>
-
-            <!-- 5. 최근 본 레시피 (개인화 섹션, 로그인 시만) -->
+            <!-- 4. 최근 본 레시피 (개인화 섹션, 로그인 시만) -->
             <section v-if="isLoggedIn" class="dashboard-section personal-section">
                 <div class="section-wrapper">
                     <RecentViews />
                 </div>
             </section>
 
-            <!-- 6. 추천 크리에이터 -->
+            <!-- 5. 추천 크리에이터 -->
             <section class="dashboard-section creator-section">
                 <div class="section-wrapper">
                     <RecommendedCreators />
@@ -118,7 +110,6 @@ const greetingTitle = computed(() => {
     }
 
     &.main-section,
-    &.secondary-section,
     &.personal-section {
         padding: 0;
     }
@@ -198,49 +189,17 @@ const greetingTitle = computed(() => {
     }
 }
 
-// 섹션 래퍼 (주요/보조/개인화 섹션 공통)
+// 섹션 래퍼 (추천/인기/최근 본/크리에이터 공통 — 히어로만 그라데이션 유지)
 .section-wrapper {
-    background: var(--surface-card);
-    border: 1px solid var(--surface-border);
+    background: linear-gradient(180deg, #fffaf6 0%, var(--surface-card) 100%);
+    border: 1px solid rgba(255, 107, 53, 0.12);
     border-radius: 16px;
     padding: 32px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.04);
     transition: box-shadow 0.3s ease;
 
     &:hover {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    }
-}
-
-// 주요 섹션 (오늘의 추천, 인기 레시피)
-.main-section {
-    .section-wrapper {
-        background: linear-gradient(to bottom, var(--surface-card) 0%, rgba(255, 107, 53, 0.02) 100%);
-        border-color: rgba(255, 107, 53, 0.15);
-    }
-}
-
-// 보조 섹션 (카테고리)
-.secondary-section {
-    .section-wrapper {
-        background: var(--surface-card);
-        border-color: var(--surface-border);
-    }
-}
-
-// 개인화 섹션 (최근 본 레시피)
-.personal-section {
-    .section-wrapper {
-        background: linear-gradient(to bottom, rgba(59, 130, 246, 0.03) 0%, var(--surface-card) 100%);
-        border-color: rgba(59, 130, 246, 0.15);
-    }
-}
-
-// 크리에이터 섹션
-.creator-section {
-    .section-wrapper {
-        background: linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 0%, var(--surface-card) 100%);
-        border-color: rgba(16, 185, 129, 0.15);
+        box-shadow: 0 4px 16px rgba(249, 115, 22, 0.08);
     }
 }
 

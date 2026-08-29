@@ -33,7 +33,7 @@
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
 | 10 | RecipeGridCard | components/recipe/RecipeGridCard.vue | SearchResult, Category, MemberProfile, Favorites, OpenBookView | 그리드용 레시피 카드(썸네일·제목·통계 등) |
-| 11 | RecipeCard | components/recipe/RecipeCard.vue | FollowingFeed, CategorySection | 리스트/피드용 레시피 카드 |
+| 11 | RecipeCard | components/recipe/RecipeCard.vue | FollowingFeed | 리스트/피드용 레시피 카드 |
 | 12 | RecipeListItem | components/recipe/RecipeListItem.vue | PopularRecipes, Ranking | 순위·리스트 형태 레시피 한 행 |
 | 13 | RecipeDetailHeader | components/recipe/RecipeDetailHeader.vue | RecipeDetail | 레시피 상세 상단(제목·작성자·북마크·통계 등) |
 | 14 | RecipeDetailGallery | components/recipe/RecipeDetailGallery.vue | RecipeDetail | 레시피 상세 이미지 갤러리 |
@@ -59,9 +59,9 @@
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
 | 22 | PopularRecipes | components/dashboard/PopularRecipes.vue | Dashboard | 인기 레시피 섹션 |
-| 23 | ThemeCollections | components/dashboard/ThemeCollections.vue | Dashboard | 테마 컬렉션 섹션 |
-| 24 | CategorySections | components/dashboard/CategorySections.vue | Dashboard | 트렌딩 카테고리별 섹션 묶음 |
-| 25 | CategorySection | components/dashboard/CategorySection.vue | CategorySections | 카테고리 하나당 레시피 목록(RecipeCard 사용) |
+| 23 | ThemeCollections | ~~components/dashboard/ThemeCollections.vue~~ | - | 삭제됨 |
+| 24 | CategorySections | ~~components/dashboard/CategorySections.vue~~ | - | 삭제됨 |
+| 25 | CategorySection | ~~components/dashboard/CategorySection.vue~~ | - | 삭제됨 |
 | 26 | RecentViews | components/dashboard/RecentViews.vue | Dashboard | 최근 본 레시피 섹션 |
 | 27 | TodayRecommendations | components/dashboard/TodayRecommendations.vue | Dashboard | 오늘의 추천 레시피 섹션 |
 | 28 | RecommendedCreators | components/dashboard/RecommendedCreators.vue | Dashboard | 추천 크리에이터 섹션 |

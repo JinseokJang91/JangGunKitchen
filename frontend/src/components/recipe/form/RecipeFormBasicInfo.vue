@@ -78,8 +78,8 @@ defineExpose({
                         <span class="pi pi-image recipe-form-upload__placeholder-icon" aria-hidden="true"></span>
                         <span>이미지를 클릭하여 추가하세요</span>
                     </div>
-                    <div v-else class="relative w-full h-full min-h-0">
-                        <img :src="thumbnailPreview" alt="thumbnail preview" class="w-full h-full object-cover rounded-md" />
+                    <div v-else class="relative w-full h-full min-h-0 recipe-form-upload__preview">
+                        <img :src="thumbnailPreview" alt="thumbnail preview" class="recipe-form-upload__img" />
                         <button
                             type="button"
                             class="recipe-form-upload__remove"

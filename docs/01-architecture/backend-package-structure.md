@@ -33,7 +33,7 @@ app/
     │   │   ├── JangGunKitchenApplication.java
     │   │   ├── auth/api/          # JWT, OAuth(Naver/Google/Kakao), 쿠키
     │   │   ├── member/api/        # 프로필, 팔로우, 1:1 문의
-    │   │   ├── cook/api/          # recipe, ingredient, search, recommendation, popular, admin, category, creator
+    │   │   ├── cook/api/          # recipe, ingredient, search, recommendation, popular, admin, creator
     │   │   └── common/            # 공유 엔티티(Member/Follow/CommonCode), Security, Storage, 예외, /health
     │   └── resources/
     │       ├── application.yml
@@ -54,7 +54,7 @@ app/
 
 ### 2.3 cook
 
-레시피 CRUD, 댓글, 북마크/찜, 조회 기록, 검색, 카테고리, 추천, 인기 배치, 재료, 관리자 API, 공통코드 조회/관리.
+레시피 CRUD, 댓글, 북마크/찜, 조회 기록, 검색, 추천, 인기 배치, 재료, 관리자 API, 공통코드 조회/관리.
 
 ### 2.4 common
 

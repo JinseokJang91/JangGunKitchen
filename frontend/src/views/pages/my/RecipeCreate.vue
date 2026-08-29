@@ -490,7 +490,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="recipe-form-page__notice">
-            <p class="recipe-form-page__notice-text">셰프님이 누군가를 위해 정성들인 이 요리처럼, 레시피에서도 셰프님의 따뜻한 정성을 보여주세요.</p>
+            <p class="recipe-form-page__notice-text">카테고리 1개 이상, 요리팁·조리 순서는 필수입니다. 대표 사진은 상세·목록에서 동일하게 보입니다.</p>
         </div>
 
         <div class="recipe-form-page__body">
@@ -506,20 +506,6 @@ onBeforeUnmount(() => {
                 @update:description="form.description = $event"
                 @update:thumbnail="onThumbnailUpdate"
                 @clear-thumbnail="clearThumbnail"
-                @clear-validation="clearValidationError"
-            />
-
-            <RecipeFormIngredients
-                v-model="form.ingredientGroups"
-                :ingredient-type-options="ingredientTypeOptions"
-                :unit-options="unitOptions"
-                :ingredient-types-loading="ingredientTypesLoading"
-                :ingredient-types-error="ingredientTypesError"
-                :units-loading="unitsLoading"
-                :units-error="unitsError"
-                :validation-errors="validationErrors"
-                :disabled="submitting"
-                :guide-image="guideImages.ingredients"
                 @clear-validation="clearValidationError"
             />
 
@@ -540,6 +526,20 @@ onBeforeUnmount(() => {
                 @clear-validation="clearValidationError"
             />
 
+            <RecipeFormIngredients
+                v-model="form.ingredientGroups"
+                :ingredient-type-options="ingredientTypeOptions"
+                :unit-options="unitOptions"
+                :ingredient-types-loading="ingredientTypesLoading"
+                :ingredient-types-error="ingredientTypesError"
+                :units-loading="unitsLoading"
+                :units-error="unitsError"
+                :validation-errors="validationErrors"
+                :disabled="submitting"
+                :guide-image="guideImages.ingredients"
+                @clear-validation="clearValidationError"
+            />
+
             <RecipeFormSteps
                 v-model="form.steps"
                 :validation-errors="validationErrors"
@@ -550,11 +550,10 @@ onBeforeUnmount(() => {
                 @clear-validation="clearValidationError"
             />
 
-            <!-- 설정 및 저장 -->
             <div class="recipe-form-section">
                 <div class="recipe-form-section__title-row">
                     <h3 class="recipe-form-section__title">
-                        <span class="mr-1">설정 및 저장</span>
+                        <span class="mr-1">설정</span>
                         <i ref="el => { if (el) guideIconRefs.settings = el as HTMLElement; }" class="pi pi-question-circle help-button" @click="showGuide('settings', $event)" />
                         <Popover
                             :ref="
@@ -567,12 +566,12 @@ onBeforeUnmount(() => {
                             :dismissable="true"
                         >
                             <div class="p-2">
-                                <img :src="guideImages.settings" alt="설정 및 저장 가이드" class="max-w-full h-auto" />
+                                <img :src="guideImages.settings" alt="설정 가이드" class="max-w-full h-auto" />
                             </div>
                         </Popover>
                     </h3>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="recipe-form-section__label"><b>공개 여부</b></label>
                         <Select v-model="form.visibility" :options="visibilityOptions" optionLabel="label" optionValue="value" class="w-full" />
@@ -582,10 +581,11 @@ onBeforeUnmount(() => {
                         <Select v-model="form.status" :options="statusOptions" optionLabel="label" optionValue="value" class="w-full" />
                     </div>
                 </div>
-                <div class="recipe-form-page__actions">
-                    <Button class="recipe-form-btn" label="등록" icon="pi pi-check" severity="primary" @click="submit" :disabled="submitting" />
-                </div>
             </div>
+        </div>
+
+        <div class="recipe-form-page__sticky-actions">
+            <Button class="recipe-form-btn" label="등록" icon="pi pi-check" severity="primary" @click="submit" :disabled="submitting" :loading="submitting" />
         </div>
     </div>
 </template>

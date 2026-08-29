@@ -83,7 +83,6 @@
                 width: 40px;
                 height: 40px;
                 border-radius: 0.5rem;
-                background-color: var(--surface-card);
                 border: none;
                 text-decoration: none;
                 cursor: pointer;
@@ -96,6 +95,36 @@
                     height: 100%;
                     object-fit: contain;
                     display: block;
+                }
+
+                &.youtube {
+                    background-color: #ffffff;
+
+                    img {
+                        // 에셋 여백이 커 시각 무게가 작아지므로 약간 확대
+                        transform: scale(1.12);
+                    }
+                }
+
+                &.instagram {
+                    background-color: transparent;
+
+                    img {
+                        object-fit: contain;
+                    }
+                }
+
+                &.facebook {
+                    background-color: #ffffff;
+                }
+
+                &.kakao {
+                    background-color: #fee500;
+
+                    img {
+                        object-fit: cover;
+                        transform: scale(1.06);
+                    }
                 }
             }
         }

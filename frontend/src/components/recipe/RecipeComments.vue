@@ -63,9 +63,9 @@ const isMyComment = (comment: RecipeComment) => comment.memberId === props.curre
 </script>
 
 <template>
-    <div id="comments" class="recipe-section-card bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 mb-6 md:rounded-2xl md:mb-8">
-        <h2 class="recipe-section-card__title text-xl font-bold text-gray-800 mb-4 flex items-center sm:text-2xl md:text-3xl md:mb-8">
-            <i class="pi pi-comments mr-2 sm:mr-3 text-orange-600 shrink-0"></i>
+    <div id="comments" class="recipe-section-card">
+        <h2 class="recipe-section-card__title">
+            <i class="pi pi-comments shrink-0"></i>
             댓글 ({{ commentCountLabel }})
         </h2>
 

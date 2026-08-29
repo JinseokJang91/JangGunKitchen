@@ -53,7 +53,6 @@
 | ingredient | Ingredient | 재료 |
 | ingredient_storage | IngredientStorage | 재료 보관법 |
 | ingredient_preparation | IngredientPreparation | 재료 손질법 |
-| ingredient_request | IngredientRequest | 재료 등록 요청 |
 
 ---
 
@@ -388,19 +387,6 @@
 | 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
 | 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
 
-#### 2.5.5 ingredient_request (재료 등록 요청)
-
-| No | 컬럼명 | 한글명 | 데이터타입 | NULL | PK | FK | 기본값 | 비고 |
-|----|--------|--------|------------|------|----|----|--------|------|
-| 1 | id | ID | BIGINT | N | Y | - | - | PK, IDENTITY |
-| 2 | ingredient_name | 재료명 | VARCHAR(100) | N | - | - | - | |
-| 3 | request_type | 요청유형 | VARCHAR(20) | N | - | - | - | |
-| 4 | message | 메시지 | TEXT | Y | - | - | - | |
-| 5 | member_id | 회원ID | BIGINT | Y | - | - | - | |
-| 6 | status | 상태 | VARCHAR(20) | N | - | - | PENDING | |
-| 7 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 8 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
-
 ---
 
 ## 3. 테이블·Entity 매핑 요약
@@ -433,7 +419,6 @@
 | ingredient | Ingredient (cook.api.ingredient.domain.entity) |
 | ingredient_storage | IngredientStorage (cook.api.ingredient.domain.entity) |
 | ingredient_preparation | IngredientPreparation (cook.api.ingredient.domain.entity) |
-| ingredient_request | IngredientRequest (cook.api.ingredient.domain.entity) |
 
 ---
 

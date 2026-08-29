@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import Card from 'primevue/card';
 import { getPopularRecipes } from '@/api/recipeApi';
-import RecipeListItem from '@/components/recipe/RecipeListItem.vue';
-import type { PopularRecipeItem } from '@/types/recipe';
+import type { PopularRecipeItem, Recipe } from '@/types/recipe';
 import { useAppToast } from '@/utils/toast';
 import { isEmptyDataError } from '@/utils/errorHandler';
+import { resolveProfileImage, resolveRecipeImage } from '@/utils/image';
 
 const router = useRouter();
 
@@ -27,7 +28,7 @@ const periodOptions = [
 const loadPopularRecipes = async () => {
     loading.value = true;
     try {
-        const recipes = await getPopularRecipes(10, selectedPeriod.value);
+        const recipes = await getPopularRecipes(3, selectedPeriod.value);
         popularRecipes.value = recipes;
     } catch (error) {
         if (isEmptyDataError(error)) {
@@ -52,29 +53,21 @@ function goToFullRanking() {
     router.push({ path: '/ranking', query: { period: selectedPeriod.value } });
 }
 
+function goToRecipe(recipeId: number) {
+    router.push(`/recipe/${recipeId}`);
+}
+
 // TOP 3 레시피 (순위 표시용)
 const topThreeRecipes = computed(() => {
     return popularRecipes.value.slice(0, 3);
 });
 
-// 나머지 레시피
-const remainingRecipes = computed(() => {
-    return popularRecipes.value.slice(3);
-});
-
-// 트렌드 아이콘 가져오기
-const getTrendIcon = (status: string) => {
-    switch (status) {
-        case 'UP':
-            return 'pi-arrow-up text-orange-500';
-        case 'DOWN':
-            return 'pi-arrow-down text-red-500';
-        case 'NEW':
-            return 'pi-star text-yellow-500';
-        default:
-            return 'pi-minus text-gray-400';
+function getCategoryName(recipe: Recipe): string {
+    if (recipe.categories && recipe.categories.length > 0) {
+        return recipe.categories[0].codeName || recipe.categories[0].detailName || '';
     }
-};
+    return '';
+}
 
 // 마운트 시 로드
 onMounted(() => {
@@ -114,38 +107,57 @@ onMounted(() => {
             <i class="pi pi-spinner pi-spin text-4xl text-primary-500"></i>
         </div>
 
-        <!-- TOP 3 레시피 (큰 카드) -->
-        <div v-else-if="topThreeRecipes.length > 0">
-            <div class="top-three-grid">
-                <div v-for="item in topThreeRecipes" :key="item.recipe.id" class="relative">
-                    <!-- 순위 배지 -->
-                    <div :class="['rank-badge', item.rank === 1 ? 'rank-badge--gold' : item.rank === 2 ? 'rank-badge--silver' : 'rank-badge--bronze']">
-                        {{ item.rank }}
-                    </div>
-
-                    <!-- 트렌드 배지 -->
-                    <div v-if="item.trendStatus !== 'SAME'" class="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-md">
-                        <i :class="['pi', getTrendIcon(item.trendStatus)]"></i>
-                    </div>
-
-                    <!-- 레시피 카드 -->
-                    <RecipeListItem :recipe="item.recipe" :show-stats="true" :show-author="true" />
-                </div>
-            </div>
-
-            <!-- 나머지 레시피 (작은 리스트) -->
-            <div v-if="remainingRecipes.length > 0" class="remaining-block">
-                <h3 class="remaining-title">다른 인기 레시피</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div v-for="item in remainingRecipes" :key="item.recipe.id" class="relative">
-                        <!-- 순위 표시 -->
-                        <div class="absolute top-2 left-2 z-10 bg-gray-800 bg-opacity-75 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-                            {{ item.rank }}
+        <!-- TOP 3 레시피 -->
+        <div v-else-if="topThreeRecipes.length > 0" class="top-three-grid">
+            <div v-for="item in topThreeRecipes" :key="item.recipe.id" class="popular-card-wrapper" @click="goToRecipe(item.recipe.id)">
+                <Card class="popular-card">
+                    <template #header>
+                        <div class="card-thumbnail">
+                            <div :class="['rank-badge', item.rank === 1 ? 'rank-badge--gold' : item.rank === 2 ? 'rank-badge--silver' : 'rank-badge--bronze']">
+                                {{ item.rank }}
+                            </div>
+                            <img :src="resolveRecipeImage(item.recipe.thumbnail)" :alt="item.recipe.title" />
                         </div>
+                    </template>
+                    <template #content>
+                        <div class="card-info">
+                            <div v-if="getCategoryName(item.recipe)" class="recipe-category">
+                                {{ getCategoryName(item.recipe) }}
+                            </div>
 
-                        <RecipeListItem :recipe="item.recipe" :show-stats="true" :show-author="false" />
-                    </div>
-                </div>
+                            <h3 class="recipe-title">{{ item.recipe.title }}</h3>
+
+                            <p v-if="item.recipe.description" class="recipe-description">
+                                {{ item.recipe.description }}
+                            </p>
+
+                            <div class="recipe-stats">
+                                <span class="recipe-stat">
+                                    <i class="pi pi-eye"></i>
+                                    {{ item.recipe.hits || 0 }}
+                                </span>
+                                <span class="recipe-stat">
+                                    <i class="pi pi-heart"></i>
+                                    {{ item.recipe.favoriteCount || 0 }}
+                                </span>
+                                <span class="recipe-stat">
+                                    <i class="pi pi-comment"></i>
+                                    {{ item.recipe.commentCount || 0 }}
+                                </span>
+                            </div>
+
+                            <div class="recipe-author">
+                                <img v-if="item.recipe.memberProfileImage" :src="resolveProfileImage(item.recipe.memberProfileImage)" :alt="item.recipe.memberNickname || item.recipe.memberName" class="recipe-author__avatar" />
+                                <div v-else class="recipe-author__avatar recipe-author__avatar--placeholder">
+                                    <i class="pi pi-user"></i>
+                                </div>
+                                <span class="recipe-author__name">
+                                    {{ item.recipe.memberNickname || item.recipe.memberName }}
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                </Card>
             </div>
         </div>
 
@@ -255,14 +267,201 @@ onMounted(() => {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+}
+
+.popular-card-wrapper {
+    height: 100%;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: translateY(-8px);
+
+        .popular-card {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-thumbnail img {
+            transform: scale(1.05);
+        }
+    }
+}
+
+.popular-card {
+    height: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+
+    :deep(.p-card-header) {
+        padding: 0;
+    }
+
+    :deep(.p-card-body) {
+        padding: 0;
+    }
+
+    :deep(.p-card-content) {
+        padding: 0;
+    }
+}
+
+.card-thumbnail {
+    position: relative;
+    width: 100%;
+    height: 12rem;
+    overflow: hidden;
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+}
+
+.rank-badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 10;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    &--gold {
+        background: #eab308;
+    }
+
+    &--silver {
+        background: #9ca3af;
+    }
+
+    &--bronze {
+        background: #ea580c;
+    }
+}
+
+.card-info {
+    padding: 1rem;
+}
+
+.recipe-category {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--primary-color, #f97316);
+    margin-bottom: 0.375rem;
+    letter-spacing: -0.01em;
+}
+
+.recipe-title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0 0 0.5rem;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.recipe-description {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--text-color-secondary);
+    margin: 0 0 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.recipe-stats {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.recipe-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.recipe-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.recipe-author__avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+
+    &--placeholder {
+        background: #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+
+        i {
+            font-size: 0.75rem;
+        }
+    }
+}
+
+.recipe-author__name {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.popular-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+
+    &__icon {
+        font-size: 3rem;
+        color: var(--surface-300, #d1d5db);
+        margin-bottom: 0.75rem;
+    }
+
+    &__msg {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--text-color-secondary);
+    }
 }
 
 @media (min-width: 768px) {
     .top-three-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
-        margin-bottom: 2rem;
     }
 
     .popular-header {
@@ -307,83 +506,27 @@ onMounted(() => {
         padding: 0.5rem 0.875rem;
         font-size: 0.875rem;
     }
-}
 
-.rank-badge {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 10;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-    &--gold {
-        background: #eab308;
-    }
-
-    &--silver {
-        background: #9ca3af;
-    }
-
-    &--bronze {
-        background: #ea580c;
-    }
-}
-
-@media (min-width: 768px) {
     .rank-badge {
-        top: 1rem;
-        left: 1rem;
+        top: 0.5rem;
+        left: 0.5rem;
         width: 3rem;
         height: 3rem;
         font-size: 1.125rem;
     }
-}
 
-.remaining-block {
-    margin-top: 1.5rem;
-}
-
-.remaining-title {
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0 0 0.75rem;
-    color: var(--text-color);
-}
-
-@media (min-width: 768px) {
-    .remaining-block {
-        margin-top: 2rem;
+    .recipe-category {
+        font-size: 0.8125rem;
+        margin-bottom: 0.5rem;
     }
 
-    .remaining-title {
-        font-size: 1.125rem;
-        margin-bottom: 1rem;
-    }
-}
-
-.popular-empty {
-    text-align: center;
-    padding: 3rem 1rem;
-
-    &__icon {
-        font-size: 3rem;
-        color: var(--surface-300, #d1d5db);
-        margin-bottom: 0.75rem;
+    .recipe-title {
+        font-size: 1.25rem;
+        font-weight: 700;
     }
 
-    &__msg {
-        margin: 0;
+    .recipe-description {
         font-size: 0.875rem;
-        color: var(--text-color-secondary);
     }
 }
 
@@ -394,6 +537,31 @@ onMounted(() => {
 
     .popular-desc {
         font-size: 0.8125rem;
+    }
+
+    .recipe-category {
+        font-size: 0.625rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .recipe-title {
+        font-size: 0.9375rem;
+        margin-bottom: 0.375rem;
+    }
+
+    .recipe-description {
+        font-size: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .recipe-stats {
+        font-size: 0.75rem;
+        gap: 0.5rem 0.75rem;
+        margin-bottom: 0.625rem;
+    }
+
+    .recipe-author__name {
+        font-size: 0.75rem;
     }
 }
 </style>

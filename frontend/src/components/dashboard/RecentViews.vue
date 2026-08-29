@@ -163,8 +163,7 @@ defineExpose({
                     <i class="pi pi-clock"></i>
                     최근 본 레시피
                 </h2>
-                <p class="section-subtitle" v-if="recentViews.length > 0">{{ recentViews.length }}개</p>
-                <p class="section-subtitle" v-else>아직 본 레시피가 없습니다</p>
+                <p class="section-subtitle" v-if="recentViews.length === 0">아직 본 레시피가 없습니다</p>
             </div>
             <div class="header-actions" v-if="recentViews.length > 0">
                 <Button label="기록 삭제" icon="pi pi-trash" @click="confirmDelete" text severity="danger" size="small" />

@@ -81,7 +81,7 @@ flowchart TB
 |--------|------|-----------------|
 | **auth** | OAuth 로그인, JWT 발급/갱신/로그아웃 | /api/auth |
 | **member** | 회원 프로필, 팔로우, 1:1 문의 | /api/member |
-| **cook** | 레시피·댓글·북마크·찜·조회·추천·카테고리·크리에이터·검색·재료·관리자·공통코드 | /api/cook |
+| **cook** | 레시피·댓글·북마크·찜·조회·추천·크리에이터·검색·재료·관리자·공통코드 | /api/cook |
 | **common** | 공유 엔티티(Member, Follow, CommonCode), 보안, 스토리지, 예외, `/health` | /health |
 
 ---
@@ -188,7 +188,6 @@ flowchart LR
     subgraph Load["병렬 로딩"]
         B1["오늘의 추천\n/recommendations/today"]
         B2["인기 레시피\n/recipes/popular"]
-        B4["트렌딩 카테고리\n/categories/trending"]
         B5["최근 본\n(로그인 시)\n/recent-views"]
         B6["추천 크리에이터\n/creators/recommended"]
     end
@@ -196,7 +195,6 @@ flowchart LR
     subgraph UI["화면 섹션"]
         U1["TodayRecommendations"]
         U2["PopularRecipes"]
-        U4["CategorySections"]
         U5["RecentViews"]
         U6["RecommendedCreators"]
     end
@@ -204,7 +202,6 @@ flowchart LR
     A --> Load
     B1 --> U1
     B2 --> U2
-    B4 --> U4
     B5 --> U5
     B6 --> U6
 ```

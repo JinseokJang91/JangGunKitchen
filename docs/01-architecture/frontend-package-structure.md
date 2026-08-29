@@ -37,7 +37,6 @@ src/
 ├── api/                         # 도메인별 백엔드 API 호출 모듈
 │   ├── authApi.ts
 │   ├── bookmarkApi.ts
-│   ├── categoryApi.ts
 │   ├── commonCodeApi.ts
 │   ├── creatorApi.ts
 │   ├── followApi.ts
@@ -97,8 +96,7 @@ src/
 │       │   ├── IngredientGroupManagement.vue
 │       │   ├── IngredientGroupRegister.vue
 │       │   ├── IngredientManagementRegister.vue
-│       │   ├── IngredientRegister.vue
-│       │   └── IngredientRequestList.vue
+│       │   └── IngredientRegister.vue
 │       ├── auth/
 │       │   ├── Login.vue
 │       │   ├── OAuthCallback.vue
@@ -151,8 +149,6 @@ src/
 │   ├── community/
 │   │   └── FAQ.vue
 │   ├── dashboard/
-│   │   ├── CategorySection.vue
-│   │   ├── CategorySections.vue
 │   │   ├── PopularRecipes.vue
 │   │   ├── RecentViews.vue
 │   │   ├── RecommendedCreators.vue

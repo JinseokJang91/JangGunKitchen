@@ -15,8 +15,6 @@ const { showError } = useAppToast();
 const creators = ref<Creator[]>([]);
 const loading = ref(false);
 const followLoadingMap = ref<Map<number, boolean>>(new Map());
-// 팔로우 직후 카드 페이드아웃 처리를 위한 Set
-const removingSet = ref<Set<number>>(new Set());
 
 const isLoggedIn = computed(() => authStore.isLoggedIn);
 
@@ -47,21 +45,26 @@ const handleFollow = async (creator: Creator) => {
         return;
     }
 
+    if (creator.isFollowing) {
+        return;
+    }
+
     followLoadingMap.value.set(creator.memberId, true);
     try {
         await followUser(creator.memberId);
 
-        // 팔로우 성공 시 카드를 목록에서 제거 (페이드아웃 후 삭제)
-        removingSet.value = new Set([...removingSet.value, creator.memberId]);
-        setTimeout(() => {
-            creators.value = creators.value.filter((c) => c.memberId !== creator.memberId);
-            const next = new Set(removingSet.value);
-            next.delete(creator.memberId);
-            removingSet.value = next;
-        }, 400);
+        const target = creators.value.find((c) => c.memberId === creator.memberId);
+        if (target) {
+            target.isFollowing = true;
+            target.followerCount += 1;
+        }
     } catch (e: unknown) {
         const err = e && typeof e === 'object' && 'status' in e ? (e as { status?: number }) : null;
         if (err?.status === 409) {
+            const target = creators.value.find((c) => c.memberId === creator.memberId);
+            if (target) {
+                target.isFollowing = true;
+            }
             showError('이미 팔로우 중입니다.');
         } else {
             showError('팔로우에 실패했습니다.');
@@ -73,10 +76,6 @@ const handleFollow = async (creator: Creator) => {
 
 const isFollowLoading = (memberId: number): boolean => {
     return followLoadingMap.value.get(memberId) ?? false;
-};
-
-const isRemoving = (memberId: number): boolean => {
-    return removingSet.value.has(memberId);
 };
 
 const formatNumber = (num: number): string => {
@@ -121,7 +120,7 @@ onMounted(() => {
 
         <!-- 크리에이터 그리드 -->
         <div v-else class="creators-grid">
-            <div v-for="creator in creators" :key="creator.memberId" class="creator-card" :class="{ removing: isRemoving(creator.memberId) }" @click="goToProfile(creator.memberId)">
+            <div v-for="creator in creators" :key="creator.memberId" class="creator-card" @click="goToProfile(creator.memberId)">
                 <!-- 추천 이유 배지 -->
                 <div class="recommend-badge">
                     <span class="badge-text">{{ creator.recommendReason }}</span>
@@ -163,10 +162,11 @@ onMounted(() => {
                 </div>
 
                 <!-- 팔로우 버튼 -->
-                <button class="follow-btn" :class="{ loading: isFollowLoading(creator.memberId) }" @click.stop="handleFollow(creator)" :disabled="isFollowLoading(creator.memberId)">
+                <button class="follow-btn" :class="{ loading: isFollowLoading(creator.memberId), following: creator.isFollowing }" @click.stop="handleFollow(creator)" :disabled="isFollowLoading(creator.memberId) || creator.isFollowing">
                     <i v-if="isFollowLoading(creator.memberId)" class="pi pi-spinner pi-spin"></i>
+                    <i v-else-if="creator.isFollowing" class="pi pi-check"></i>
                     <i v-else class="pi pi-plus"></i>
-                    <span>팔로우</span>
+                    <span>{{ creator.isFollowing ? '팔로잉' : '팔로우' }}</span>
                 </button>
             </div>
         </div>
@@ -240,21 +240,12 @@ onMounted(() => {
     border: 1px solid var(--surface-border);
     background: var(--surface-card);
     cursor: pointer;
-    transition:
-        all 0.25s ease,
-        opacity 0.4s ease,
-        transform 0.4s ease;
+    transition: all 0.25s ease;
 
     &:hover {
         transform: translateY(-6px);
         box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
         border-color: var(--primary-color);
-    }
-
-    &.removing {
-        opacity: 0;
-        transform: scale(0.92);
-        pointer-events: none;
     }
 }
 
@@ -393,6 +384,19 @@ onMounted(() => {
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+    }
+
+    &.following {
+        background: var(--surface-100, #f3f4f6);
+        border-color: var(--surface-border);
+        color: var(--text-color-secondary);
+        opacity: 1;
+        cursor: default;
+
+        &:hover {
+            background: var(--surface-100, #f3f4f6);
+            color: var(--text-color-secondary);
+        }
     }
 }
 
