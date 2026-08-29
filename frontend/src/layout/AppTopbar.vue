@@ -1,0 +1,615 @@
+<script setup lang="ts">
+import logoText from '@/assets/images/logo/logo-full.png';
+import { useAuthStore } from '@/stores/authStore';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useConfirm } from 'primevue/useconfirm';
+import Menu from 'primevue/menu';
+import { getRecentSearchKeywords, deleteRecentSearchKeyword, deleteAllRecentSearchKeywords, saveRecentSearchKeyword, type RecentSearchKeyword } from '@/utils/search';
+import { RECIPE_CATEGORIES } from '@/data/recipeCategoryData';
+import type { RecipeCategory } from '@/types/recipeCategory';
+
+const router = useRouter();
+const route = useRoute();
+const confirm = useConfirm();
+const authStore = useAuthStore();
+
+const searchQuery = ref('');
+const profileMenu = ref();
+const categoryDropdownRef = ref<HTMLElement | null>(null);
+const mobileMenuOpen = ref(false);
+const topbarRef = ref<HTMLElement | null>(null);
+let topbarResizeObserver: ResizeObserver | null = null;
+
+const syncLayoutTopOffset = () => {
+    if (!topbarRef.value) return;
+
+    const renderedTopbarHeight = Math.ceil(topbarRef.value.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--layout-main-top-offset', `${renderedTopbarHeight}px`);
+};
+
+// 카테고리 선택 시 드롭다운 닫기
+const closeCategoryDropdown = () => {
+    categoryDropdownRef.value?.classList.add('hidden');
+};
+
+// 프로필 메뉴 아이템 (관리자일 때 마이페이지 밑에 관리자페이지 추가)
+const profileMenuItems = computed(() => {
+    const items: Array<{ label: string; icon: string; command?: () => void } | { separator: true }> = [
+        {
+            label: '마이페이지',
+            icon: 'pi pi-user',
+            command: () => handleMyMenuClick('/my', new Event('click'))
+        }
+    ];
+    if (authStore.isAdmin) {
+        items.push({
+            label: '관리자페이지',
+            icon: 'pi pi-cog',
+            command: () => handleMyMenuClick('/admin', new Event('click'))
+        });
+    }
+    items.push(
+        { separator: true },
+        {
+            label: '로그아웃',
+            icon: 'pi pi-sign-out',
+            command: () => handleLogout()
+        }
+    );
+    return items;
+});
+const recentKeywords = ref<RecentSearchKeyword[]>([]);
+const showRecentKeywords = ref(false);
+const recentKeywordsLoading = ref(false);
+
+// 자동저장 설정 (localStorage에 저장 - 계정별로 분리)
+const getAutoSaveKey = (memberId?: number): string => {
+    if (memberId) {
+        return `recent_search_auto_save_${memberId}`;
+    }
+    return 'recent_search_auto_save_guest';
+};
+
+const getInitialAutoSaveValue = (): boolean => {
+    const memberId = authStore.memberInfo?.id;
+    const key = getAutoSaveKey(memberId);
+    const saved = localStorage.getItem(key);
+    return saved === null ? true : saved === 'true'; // 기본값은 true
+};
+const isAutoSaveEnabled = ref<boolean>(getInitialAutoSaveValue());
+
+// 카테고리 라우트 링크 생성 (필터 정보를 쿼리 파라미터로 변환)
+const getCategoryRouteLink = (category: RecipeCategory) => {
+    const { codeId, detailCodeIds } = category.filter;
+    return {
+        path: '/recipe/category',
+        query: {
+            shortcut: category.id.toString(),
+            codeId,
+            details: detailCodeIds.join(','),
+            name: category.name
+        }
+    };
+};
+
+const handleSearch = () => {
+    const keyword = searchQuery.value.trim();
+
+    if (keyword) {
+        // 자동저장이 켜져 있고 로그인 상태일 때만 검색어 저장
+        if (authStore.isLoggedIn && isAutoSaveEnabled.value) {
+            try {
+                const memberId = authStore.memberInfo?.id;
+                saveRecentSearchKeyword(keyword, memberId);
+                // 저장 후 목록 새로고침
+                loadRecentKeywords();
+            } catch (error) {
+                console.error('검색어 저장 실패:', error);
+                // 저장 실패해도 검색은 진행
+            }
+        }
+
+        // 검색어가 있으면 검색 결과 페이지로 이동
+        router.push({
+            path: '/recipe/search',
+            query: { keyword: keyword }
+        });
+        // 최근 검색어 목록 닫기
+        showRecentKeywords.value = false;
+    }
+};
+
+const clearSearch = () => {
+    searchQuery.value = '';
+    showRecentKeywords.value = false;
+};
+
+// 최근 검색어 목록 로드
+const loadRecentKeywords = () => {
+    // 로그인 상태가 아니면 목록을 로드하지 않음
+    if (!authStore.isLoggedIn) {
+        recentKeywords.value = [];
+        return;
+    }
+
+    // 자동저장 off 상태에서도 목록은 로드 (단지 새 검색어는 저장하지 않음)
+    try {
+        recentKeywordsLoading.value = true;
+        const memberId = authStore.memberInfo?.id;
+        const keywords = getRecentSearchKeywords(memberId);
+        recentKeywords.value = keywords;
+    } catch (error) {
+        console.error('최근 검색어 로드 실패:', error);
+        recentKeywords.value = [];
+    } finally {
+        recentKeywordsLoading.value = false;
+    }
+};
+
+// 검색어 클릭 시 검색 실행
+const selectRecentKeyword = (keyword: string) => {
+    searchQuery.value = keyword;
+    showRecentKeywords.value = false; // 드롭다운 닫기
+
+    // 자동저장이 켜져 있고 로그인 상태일 때만 검색어 저장
+    if (authStore.isLoggedIn && isAutoSaveEnabled.value) {
+        try {
+            const memberId = authStore.memberInfo?.id;
+            saveRecentSearchKeyword(keyword, memberId);
+            // 저장 후 목록 새로고침
+            loadRecentKeywords();
+        } catch (error) {
+            console.error('검색어 저장 실패:', error);
+            // 저장 실패해도 검색은 진행
+        }
+    }
+
+    handleSearch();
+};
+
+// 최근 검색어 삭제
+const handleDeleteKeyword = (keywordId: number, event: Event) => {
+    event.stopPropagation(); // 이벤트 전파 방지
+
+    try {
+        const memberId = authStore.memberInfo?.id;
+        deleteRecentSearchKeyword(keywordId, memberId);
+        // 목록에서 제거
+        recentKeywords.value = recentKeywords.value.filter((k) => k.id !== keywordId);
+    } catch (error) {
+        console.error('검색어 삭제 실패:', error);
+    }
+};
+
+// 자동저장 끄기/켜기 (ToggleSwitch의 v-model이 값 변경을 처리)
+const toggleAutoSave = (newValue: boolean) => {
+    const memberId = authStore.memberInfo?.id;
+    const key = getAutoSaveKey(memberId);
+    localStorage.setItem(key, String(newValue));
+
+    // 자동저장 설정 변경 (토스트 없이 처리)
+};
+
+// 전체 검색어 삭제
+const handleDeleteAllKeywords = (event: Event) => {
+    event.stopPropagation(); // 이벤트 전파 방지
+
+    confirm.require({
+        message: '모든 최근 검색어를 삭제하시겠습니까?',
+        header: '전체 삭제',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: '취소',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: '삭제',
+            severity: 'danger'
+        },
+        accept: () => {
+            try {
+                const memberId = authStore.memberInfo?.id;
+                deleteAllRecentSearchKeywords(memberId);
+                recentKeywords.value = [];
+            } catch (error) {
+                console.error('전체 검색어 삭제 실패:', error);
+            }
+        },
+        reject: () => {
+            // 취소 시 아무것도 하지 않음
+        }
+    });
+};
+
+// 검색창 포커스 시 최근 검색어 표시 (검색창이 비어있을 때만)
+const handleSearchFocus = () => {
+    // 검색창이 비어있을 때만 최근 검색어 표시 (자동저장 off 상태에서도 표시)
+    if (authStore.isLoggedIn && searchQuery.value.trim() === '') {
+        loadRecentKeywords();
+        showRecentKeywords.value = true;
+    } else {
+        showRecentKeywords.value = false;
+    }
+};
+
+// 검색창 블러 시 최근 검색어 숨김 (약간의 지연을 두어 클릭 이벤트 처리)
+const handleSearchBlur = (event: FocusEvent) => {
+    // 드롭다운 내부를 클릭한 경우는 닫지 않음
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    if (relatedTarget && relatedTarget.closest('.recent-keywords-dropdown')) {
+        return;
+    }
+
+    setTimeout(() => {
+        showRecentKeywords.value = false;
+    }, 200);
+};
+
+// 드롭다운 외부 클릭 시 닫기
+const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    const searchWrapper = target.closest('.search-wrapper');
+    const dropdown = target.closest('.recent-keywords-dropdown');
+
+    // 검색 래퍼나 드롭다운 외부를 클릭한 경우에만 닫기
+    if (!searchWrapper && !dropdown) {
+        showRecentKeywords.value = false;
+    }
+};
+
+const handleMyRecipesClick = (event: Event) => {
+    event.preventDefault();
+
+    if (!authStore.isLoggedIn) {
+        confirm.require({
+            message: '로그인 후 이용 가능합니다.',
+            header: '안내',
+            icon: 'pi pi-info-circle',
+            rejectProps: {
+                label: '취소',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: '로그인'
+            },
+            accept: () => {
+                router.push({
+                    path: '/auth/login',
+                    query: { redirect: '/my/recipes' }
+                });
+            },
+            reject: () => {
+                // 취소 시 아무것도 하지 않음
+            }
+        });
+    } else {
+        router.push('/my/recipes');
+    }
+};
+
+const toggleMobileMenu = () => {
+    mobileMenuOpen.value = !mobileMenuOpen.value;
+};
+
+const closeMobileMenu = () => {
+    mobileMenuOpen.value = false;
+};
+
+const handleMyMenuClick = (path: string, event: Event) => {
+    event.preventDefault();
+    closeMobileMenu();
+
+    if (!authStore.isLoggedIn) {
+        confirm.require({
+            message: '로그인 후 이용 가능합니다.',
+            header: '안내',
+            icon: 'pi pi-info-circle',
+            rejectProps: {
+                label: '취소',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: '로그인'
+            },
+            accept: () => {
+                router.push({
+                    path: '/auth/login',
+                    query: { redirect: path }
+                });
+            },
+            reject: () => {
+                // 취소 시 아무것도 하지 않음
+            }
+        });
+    } else {
+        router.push(path);
+    }
+};
+
+const handleLogout = async () => {
+    confirm.require({
+        message: '로그아웃 하시겠습니까?',
+        header: '안내',
+        icon: 'pi pi-info-circle',
+        rejectProps: {
+            label: '취소',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: '확인'
+        },
+        accept: async () => {
+            await authStore.logout();
+            router.push('/');
+        },
+        reject: () => {
+            // 취소 시 아무것도 하지 않음
+        }
+    });
+};
+
+/** 햄버거 드로어 풋터: 메뉴 닫은 뒤 로그아웃 확인 */
+const handleMobileDrawerLogout = () => {
+    closeMobileMenu();
+    handleLogout();
+};
+
+const handleMobileDrawerLogin = () => {
+    closeMobileMenu();
+    router.push({
+        path: '/auth/login',
+        query: { redirect: route.fullPath }
+    });
+};
+
+// 로그인 상태 변경 감시하여 최근 검색어 로드 및 자동저장 설정 업데이트
+watch(
+    () => authStore.isLoggedIn,
+    (isLoggedIn) => {
+        if (isLoggedIn && showRecentKeywords.value) {
+            // 자동저장 off 상태에서도 목록 로드
+            loadRecentKeywords();
+            // 계정 변경 시 해당 계정의 자동저장 설정으로 업데이트
+            isAutoSaveEnabled.value = getInitialAutoSaveValue();
+        } else if (!isLoggedIn) {
+            recentKeywords.value = [];
+            showRecentKeywords.value = false;
+            // 로그아웃 시 기본값으로 재설정
+            isAutoSaveEnabled.value = getInitialAutoSaveValue();
+        }
+    }
+);
+
+// 사용자 ID 변경 감시 (계정 변경 시 자동저장 설정 업데이트)
+watch(
+    () => authStore.memberInfo?.id,
+    (newId, oldId) => {
+        // 사용자 ID가 변경되었을 때 (계정 변경)
+        if (newId !== oldId && authStore.isLoggedIn) {
+            isAutoSaveEnabled.value = getInitialAutoSaveValue();
+            // 최근 검색어 목록도 새로 로드
+            if (showRecentKeywords.value) {
+                loadRecentKeywords();
+            }
+        }
+    }
+);
+
+// 검색어 입력 감시 - 값이 입력되면 최근 검색어 목록 숨김
+watch(searchQuery, (newValue) => {
+    if (newValue.trim() !== '') {
+        showRecentKeywords.value = false;
+    }
+});
+
+// OAuth postMessage 핸들러 (onUnmounted에서 제거하기 위해 동일 참조 유지)
+const handleOAuthMessage = async (event: MessageEvent) => {
+    if (event.data && (event.data.type === 'NAVER_LOGIN_SUCCESS' || event.data.type === 'GOOGLE_LOGIN_SUCCESS' || event.data.type === 'KAKAO_LOGIN_SUCCESS')) {
+        await authStore.login();
+        const redirectPath = localStorage.getItem('oauth_redirect');
+        if (redirectPath) {
+            localStorage.removeItem('oauth_redirect');
+            router.push(redirectPath);
+        }
+    } else if (event.data && (event.data.type === 'NAVER_LOGIN_ERROR' || event.data.type === 'GOOGLE_LOGIN_ERROR' || event.data.type === 'KAKAO_LOGIN_ERROR')) {
+        authStore.reset();
+        localStorage.removeItem('oauth_redirect');
+    }
+};
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+    window.addEventListener('message', handleOAuthMessage);
+    window.addEventListener('resize', syncLayoutTopOffset);
+
+    syncLayoutTopOffset();
+    if (topbarRef.value) {
+        topbarResizeObserver = new ResizeObserver(() => {
+            syncLayoutTopOffset();
+        });
+        topbarResizeObserver.observe(topbarRef.value);
+    }
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+    window.removeEventListener('message', handleOAuthMessage);
+    window.removeEventListener('resize', syncLayoutTopOffset);
+    topbarResizeObserver?.disconnect();
+    topbarResizeObserver = null;
+});
+</script>
+
+<template>
+    <div ref="topbarRef" class="layout-topbar-horizontal">
+        <!-- main과 동일한 콘텐츠 영역으로 정렬되는 내부 래퍼 -->
+        <div class="topbar-inner">
+            <!-- 좌측 영역: 로고 + 앱명 + 메뉴 -->
+            <div class="topbar-left">
+                <!-- 모바일 메뉴 버튼 (768px 이하에서만 표시) -->
+                <button type="button" class="topbar-mobile-menu-btn" aria-label="메뉴 열기" @click="toggleMobileMenu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <!-- 로고와 앱명 -->
+                <router-link to="/" class="logo-section" @click="closeMobileMenu">
+                    <img :src="logoText" alt="JangGunKitchen" class="logo-image" />
+                </router-link>
+
+                <!-- 메뉴 (데스크톱) -->
+                <nav class="main-menu">
+                    <router-link to="/recipe/category" class="menu-item">
+                        <i class="fa-solid fa-utensils"></i>
+                        <span>전체 레시피</span>
+                    </router-link>
+                    <router-link to="/ingredient/management" class="menu-item">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                        <span>재료 관리</span>
+                    </router-link>
+                    <router-link to="/ranking" class="menu-item">
+                        <i class="fa-solid fa-ranking-star"></i>
+                        <span>랭킹</span>
+                    </router-link>
+                    <div class="menu-item-wrapper">
+                        <button
+                            type="button"
+                            class="menu-item category-menu-btn"
+                            v-styleclass="{
+                                selector: '@next',
+                                enterFromClass: 'hidden',
+                                leaveToClass: 'hidden',
+                                hideOnOutsideClick: true
+                            }"
+                        >
+                            <i class="fa-solid fa-arrow-down-wide-short"></i>
+                            <span>카테고리</span>
+                            <i class="fa-solid fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div ref="categoryDropdownRef" class="hidden category-dropdown">
+                            <div class="category-grid">
+                                <router-link v-for="category in RECIPE_CATEGORIES" :key="category.id" :to="getCategoryRouteLink(category)" class="category-item" @click="closeCategoryDropdown">
+                                    <i :class="category.icon"></i>
+                                    <div class="category-info">
+                                        <span class="category-name">{{ category.name }}</span>
+                                        <span v-if="category.description" class="category-desc">{{ category.description }}</span>
+                                    </div>
+                                </router-link>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <!-- 중앙 영역: 검색창 -->
+            <div class="topbar-center">
+                <div class="search-wrapper">
+                    <div class="search-container">
+                        <button type="button" class="search-icon-btn" aria-label="검색" @click="handleSearch">
+                            <i class="pi pi-search" aria-hidden="true"></i>
+                        </button>
+                        <input type="text" placeholder="레시피를 검색해보세요..." class="search-input" v-model="searchQuery" @keyup.enter="handleSearch" @focus="handleSearchFocus" @blur="handleSearchBlur" />
+                        <button v-if="searchQuery" class="search-clear-btn" @click="clearSearch">
+                            <i class="pi pi-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- 최근 검색어 드롭다운 -->
+                    <div v-if="showRecentKeywords && authStore.isLoggedIn" class="recent-keywords-dropdown" @mousedown.prevent>
+                        <div class="recent-keywords-header">
+                            <span class="text-sm font-semibold text-gray-700">최근 검색어</span>
+                            <div class="recent-keywords-header-actions">
+                                <button v-if="recentKeywords.length > 0" class="auto-save-toggle-btn text-xs text-gray-600 hover:text-gray-800 whitespace-nowrap" @click="handleDeleteAllKeywords" @mousedown.stop type="button">전체 삭제</button>
+                                <div class="flex items-center gap-2" @mousedown.stop>
+                                    <span class="text-xs text-gray-600 whitespace-nowrap">자동저장</span>
+                                    <ToggleSwitch v-model="isAutoSaveEnabled" @update:modelValue="(value: boolean) => toggleAutoSave(value)" />
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="recentKeywordsLoading" class="recent-keywords-loading">
+                            <i class="pi pi-spin pi-spinner"></i>
+                            <span class="ml-2">로딩 중...</span>
+                        </div>
+                        <div v-else-if="recentKeywords.length === 0" class="recent-keywords-empty">
+                            <span class="text-sm text-gray-500">최근 검색어가 없습니다.</span>
+                        </div>
+                        <div v-else class="recent-keywords-list">
+                            <div v-for="keyword in recentKeywords" :key="keyword.id" class="recent-keyword-item" @mousedown.prevent @click="selectRecentKeyword(keyword.keyword)">
+                                <i class="pi pi-clock text-gray-400"></i>
+                                <span class="recent-keyword-text">{{ keyword.keyword }}</span>
+                                <button class="recent-keyword-delete" @mousedown.stop @click.stop="handleDeleteKeyword(keyword.id, $event)" type="button">
+                                    <i class="pi pi-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측 영역: 내 레시피 + 프로필/로그인/회원가입 -->
+            <div class="topbar-right">
+                <!-- <button v-if="authStore.isLoggedIn" class="menu-item my-recipes-btn" @click="handleMyRecipesClick">
+                <i class="pi pi-book"></i>
+                <span>내 레시피</span>
+            </button> -->
+                <div v-if="authStore.isLoggedIn">
+                    <Button icon="pi pi-book" label="내 레시피" @click="handleMyRecipesClick" size="small" raised />
+                </div>
+
+                <!-- 로그인 상태일 때 -->
+                <div v-if="authStore.isLoggedIn" class="profile-section">
+                    <button type="button" class="profile-button" @click="(event: Event) => profileMenu.toggle(event)">
+                        <img v-if="authStore.memberProfileImage" :src="authStore.memberProfileImage" alt="프로필" class="profile-image" />
+                        <i v-else class="pi pi-user profile-icon"></i>
+                    </button>
+                    <Menu ref="profileMenu" :model="profileMenuItems" :popup="true" />
+                </div>
+
+                <!-- 비로그인 상태일 때 -->
+                <div v-else class="auth-buttons">
+                    <Button icon="pi pi-sign-in" label="로그인" @click="router.push('/auth/login')" size="small" raised />
+                </div>
+            </div>
+        </div>
+
+        <!-- 모바일 메뉴 오버레이 (768px 이하) -->
+        <Teleport to="body">
+            <Transition name="mobile-menu">
+                <div v-if="mobileMenuOpen" class="mobile-menu-overlay" @click.self="closeMobileMenu" role="dialog" aria-modal="true" aria-label="메뉴">
+                    <div class="mobile-menu-drawer">
+                        <div class="mobile-menu-header">
+                            <span class="mobile-menu-title">메뉴</span>
+                            <button type="button" class="mobile-menu-close" aria-label="메뉴 닫기" @click="closeMobileMenu">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="mobile-menu-body">
+                            <nav class="mobile-menu-nav" aria-labelledby="mobile-menu-category-heading">
+                                <section class="mobile-menu-section">
+                                    <h2 id="mobile-menu-category-heading" class="mobile-menu-section__label">카테고리</h2>
+                                    <router-link v-for="category in RECIPE_CATEGORIES" :key="category.id" :to="getCategoryRouteLink(category)" class="mobile-menu-item mobile-menu-item--nested" @click="closeMobileMenu">
+                                        <i :class="category.icon" aria-hidden="true"></i>
+                                        <span>{{ category.name }}</span>
+                                    </router-link>
+                                </section>
+                            </nav>
+                        </div>
+                        <div class="mobile-menu-footer">
+                            <button v-if="authStore.isLoggedIn" type="button" class="mobile-menu-footer__logout" @click="handleMobileDrawerLogout">
+                                <i class="pi pi-sign-out" aria-hidden="true"></i>
+                                <span>로그아웃</span>
+                            </button>
+                            <button v-else type="button" class="mobile-menu-footer__login" @click="handleMobileDrawerLogin">
+                                <i class="pi pi-sign-in" aria-hidden="true"></i>
+                                <span>로그인</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+    </div>
+</template>

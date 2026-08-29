@@ -1,0 +1,868 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import PageStateBlock from '@/components/common/PageStateBlock.vue';
+import OpenBookView from '@/components/bookmark/OpenBookView.vue';
+import BookmarkMemoDialog from '@/components/bookmark/BookmarkMemoDialog.vue';
+import RecipeBookFormDialog from '@/components/bookmark/RecipeBookFormDialog.vue';
+import RecipeGridCard from '@/components/recipe/RecipeGridCard.vue';
+import { updateBookmarkMemo, getRecipeBooks, getBookmarksByRecipeBook, deleteRecipeBook, reorderRecipeBooks } from '@/api/bookmarkApi';
+import { getRecipeBookColorHex } from '@/types/bookmark';
+import type { RecipeBook, RecipeBookmark } from '@/types/bookmark';
+import type { Recipe, RecipeCookingTip, RecipeGridItem, RecipeCategory } from '@/types/recipe';
+import { useConfirm } from 'primevue/useconfirm';
+import { useAppToast } from '@/utils/toast';
+
+const router = useRouter();
+const confirm = useConfirm();
+const { showError } = useAppToast();
+
+const memoDialogVisible = ref(false);
+const memoDialogBookmarkId = ref(0);
+const memoDialogRecipeTitle = ref<string | null>(null);
+const memoDialogMemo = ref<string | null>(null);
+
+const loading = ref(false);
+const error = ref<string | null>(null);
+const recipeBooks = ref<RecipeBook[]>([]);
+const selectedRecipeBook = ref<RecipeBook | null>(null);
+
+const bookmarksLoading = ref(false);
+const bookmarks = ref<RecipeBookmark[]>([]);
+
+const recipeBookDialogVisible = ref(false);
+const editingRecipeBook = ref<RecipeBook | null>(null);
+
+const draggedRecipeBookId = ref<number | null>(null);
+const dragOverRecipeBookId = ref<number | null>(null);
+
+const loadRecipeBooks = async () => {
+    try {
+        loading.value = true;
+        error.value = null;
+        recipeBooks.value = await getRecipeBooks();
+        if (recipeBooks.value.length > 0 && !selectedRecipeBook.value) {
+            selectRecipeBook(recipeBooks.value[0]);
+        }
+    } catch (err) {
+        console.error('레시피북 목록 로드 실패:', err);
+        error.value = '레시피북 목록을 불러오는데 실패했습니다.';
+    } finally {
+        loading.value = false;
+    }
+};
+
+const selectRecipeBook = async (recipeBook: RecipeBook) => {
+    selectedRecipeBook.value = recipeBook;
+    await loadBookmarks(recipeBook.id);
+};
+
+const loadBookmarks = async (recipeBookId: number) => {
+    try {
+        bookmarksLoading.value = true;
+        bookmarks.value = await getBookmarksByRecipeBook(recipeBookId);
+    } catch (err) {
+        console.error('북마크 로드 실패:', err);
+        showError('북마크를 불러오는데 실패했습니다.');
+        bookmarks.value = [];
+    } finally {
+        bookmarksLoading.value = false;
+    }
+};
+
+/**
+ * 레시피북 생성 Dialog 열기
+ */
+const openRecipeBookDialog = (recipeBook?: RecipeBook) => {
+    editingRecipeBook.value = recipeBook || null;
+    recipeBookDialogVisible.value = true;
+};
+
+const onRecipeBookCreated = async (recipeBook: RecipeBook) => {
+    await loadRecipeBooks();
+    selectRecipeBook(recipeBook);
+};
+
+const onRecipeBookUpdated = async () => {
+    await loadRecipeBooks();
+};
+
+const onRecipeBookDragStart = (_event: DragEvent, recipeBook: RecipeBook) => {
+    draggedRecipeBookId.value = recipeBook.id;
+    if (_event.dataTransfer) {
+        _event.dataTransfer.effectAllowed = 'move';
+        _event.dataTransfer.setData('text/plain', String(recipeBook.id));
+    }
+};
+
+const onRecipeBookDragEnd = () => {
+    draggedRecipeBookId.value = null;
+    dragOverRecipeBookId.value = null;
+};
+
+const onRecipeBookDragOver = (_event: DragEvent, recipeBook: RecipeBook) => {
+    if (draggedRecipeBookId.value === null || draggedRecipeBookId.value === recipeBook.id) return;
+    dragOverRecipeBookId.value = recipeBook.id;
+};
+
+const onRecipeBookDragLeave = (recipeBook: RecipeBook) => {
+    if (dragOverRecipeBookId.value === recipeBook.id) dragOverRecipeBookId.value = null;
+};
+
+const onRecipeBookDrop = async (_event: DragEvent, targetRecipeBook: RecipeBook) => {
+    const sourceId = draggedRecipeBookId.value;
+    dragOverRecipeBookId.value = null;
+    draggedRecipeBookId.value = null;
+    if (sourceId == null || sourceId === targetRecipeBook.id) return;
+
+    const currentOrder = recipeBooks.value.map((rb) => rb.id);
+    const fromIndex = currentOrder.indexOf(sourceId);
+    const toIndex = currentOrder.indexOf(targetRecipeBook.id);
+    if (fromIndex === -1 || toIndex === -1) return;
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, sourceId);
+
+    try {
+        const updated = await reorderRecipeBooks(newOrder);
+        recipeBooks.value = updated;
+    } catch (err) {
+        console.error('레시피북 순서 변경 실패:', err);
+        showError('레시피북 순서 변경에 실패했습니다.');
+    }
+};
+
+const handleDeleteRecipeBook = (recipeBook: RecipeBook) => {
+    confirm.require({
+        message: `"${recipeBook.name}" 레시피북을 삭제하시겠습니까?`,
+        header: '레시피북 삭제',
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: '취소',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: '삭제',
+            severity: 'danger'
+        },
+        accept: async () => {
+            try {
+                await deleteRecipeBook(recipeBook.id);
+                if (selectedRecipeBook.value?.id === recipeBook.id) {
+                    selectedRecipeBook.value = null;
+                    bookmarks.value = [];
+                }
+                await loadRecipeBooks();
+            } catch (err) {
+                console.error('레시피북 삭제 실패:', err);
+                showError('레시피북 삭제에 실패했습니다.');
+            }
+        }
+    });
+};
+
+/**
+ * 레시피 그리드 아이템 변환
+ */
+const getRecipeGridItem = (bookmark: RecipeBookmark): RecipeGridItem => ({
+    id: bookmark.recipe.id,
+    title: bookmark.recipe.title,
+    thumbnail: bookmark.recipe.thumbnail,
+    cookingTime: getCookingTime(bookmark.recipe) ?? undefined,
+    servings: getServings(bookmark.recipe) ?? undefined,
+    hits: bookmark.recipe.hits,
+    isFavorite: false,
+    memberNickname: bookmark.recipe.memberNickname,
+    memberName: bookmark.recipe.memberName,
+    memberProfileImage: bookmark.recipe.memberProfileImage
+});
+
+/**
+ * 요리 시간 추출
+ */
+const getCookingTime = (recipe: Recipe): string | null => {
+    if (!recipe.cookingTips || !Array.isArray(recipe.cookingTips)) return null;
+    const cookingTimeTip = recipe.cookingTips.find((tip: RecipeCookingTip) => tip.codeId === 'COOKING_TIME');
+    return cookingTimeTip?.detailName || null;
+};
+
+/**
+ * 인분 수 추출
+ */
+const getServings = (recipe: Recipe): string | null => {
+    if (!recipe.cookingTips || !Array.isArray(recipe.cookingTips)) return null;
+    const servingTip = recipe.cookingTips.find((tip: RecipeCookingTip) => tip.codeId === 'SERVINGS');
+    return servingTip?.detailName || null;
+};
+
+/**
+ * 카테고리 이름 추출
+ */
+const getCategoryName = (recipe: Recipe): string | null => {
+    if (!recipe.categories || !Array.isArray(recipe.categories) || recipe.categories.length === 0) return null;
+    const keywordCategory = recipe.categories.find((cat: RecipeCategory) => cat.codeId === 'COOKING_KEYWORD');
+    const target = keywordCategory || recipe.categories[0];
+    return target?.detailName || target?.codeName || null;
+};
+
+/**
+ * 날짜 포맷
+ */
+const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR');
+};
+
+/**
+ * 레시피 상세 보기
+ */
+const viewRecipe = (recipeId: number): void => {
+    router.push(`/recipe/${recipeId}`);
+};
+
+const onMemoUpdated = async (): Promise<void> => {
+    if (selectedRecipeBook.value) {
+        await loadBookmarks(selectedRecipeBook.value.id);
+    }
+};
+
+const openMemoDialog = (bookmark: RecipeBookmark) => {
+    memoDialogBookmarkId.value = bookmark.id;
+    memoDialogRecipeTitle.value = bookmark.recipe?.title ?? null;
+    memoDialogMemo.value = bookmark.memo ?? null;
+    memoDialogVisible.value = true;
+};
+
+const onMemoSave = async (payload: { bookmarkId: number; memo: string | null }): Promise<void> => {
+    try {
+        await updateBookmarkMemo(payload.bookmarkId, payload.memo);
+        await onMemoUpdated();
+    } catch (err) {
+        console.error('메모 저장 실패:', err);
+        showError('메모 저장에 실패했습니다.');
+        throw err;
+    }
+};
+
+/**
+ * 레시피 둘러보기
+ */
+const browseRecipes = (): void => {
+    router.push('/recipe/category');
+};
+
+onMounted(() => {
+    loadRecipeBooks();
+});
+</script>
+
+<template>
+    <div class="page-container page-container--card page-container--wide bookmarks-root bookmarks-card">
+        <div class="bookmarks-content">
+            <div class="bookmarks-notice mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-r">
+                <i class="pi pi-info-circle bookmarks-notice__icon" aria-hidden="true"></i>
+                <p class="bookmarks-notice__text">레시피북을 선택해서 북마크한 레시피를 확인하세요. 레시피북은 드래그하여 순서를 변경할 수 있어요.</p>
+            </div>
+
+            <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                <h2 class="bookmarks-title">북마크</h2>
+            </div>
+
+            <!-- 로딩 상태 -->
+            <PageStateBlock v-if="loading" state="loading" loading-message="북마크를 불러오는 중..." />
+
+            <!-- 에러 상태 -->
+            <PageStateBlock v-else-if="error" state="error" error-title="북마크를 불러올 수 없습니다" :error-message="error" retry-label="다시 시도" @retry="loadRecipeBooks" />
+
+            <!-- 메인 컨텐츠 -->
+            <div v-else class="bookmarks-layout">
+                <!-- 좌측: 레시피북 목록 -->
+                <div class="recipe-book-sidebar">
+                    <div class="recipe-book-header">
+                        <h3 class="bookmarks-section-title m-0">내 레시피북</h3>
+                        <Button icon="pi pi-plus" label="새 레시피북" class="bookmarks-action-btn" @click="openRecipeBookDialog()" />
+                    </div>
+
+                    <!-- 레시피북이 없을 때 -->
+                    <div v-if="recipeBooks.length === 0" class="empty-recipe-books bookmarks-inline-empty">
+                        <i class="pi pi-bookmark bookmarks-inline-empty__icon text-gray-300 mb-3" aria-hidden="true"></i>
+                        <p class="bookmarks-inline-empty__message text-gray-500 mb-4">아직 레시피북이 없습니다</p>
+                        <Button label="첫 번째 레시피북 만들기" icon="pi pi-plus" class="bookmarks-inline-empty__action" @click="openRecipeBookDialog()" outlined />
+                    </div>
+
+                    <!-- 레시피북 목록 (드래그로 순서 변경) -->
+                    <div v-else class="recipe-book-list">
+                        <div
+                            v-for="recipeBook in recipeBooks"
+                            :key="recipeBook.id"
+                            class="recipe-book-item"
+                            :class="{
+                                'recipe-book-item-active': selectedRecipeBook?.id === recipeBook.id,
+                                'recipe-book-item-dragging': draggedRecipeBookId === recipeBook.id,
+                                'recipe-book-item-drag-over': dragOverRecipeBookId === recipeBook.id
+                            }"
+                            @click="selectRecipeBook(recipeBook)"
+                            @dragover.prevent="onRecipeBookDragOver($event, recipeBook)"
+                            @dragleave="onRecipeBookDragLeave(recipeBook)"
+                            @drop.prevent="onRecipeBookDrop($event, recipeBook)"
+                        >
+                            <div class="recipe-book-drag-handle" draggable="true" @dragstart="onRecipeBookDragStart($event, recipeBook)" @dragend="onRecipeBookDragEnd" title="드래그하여 순서 변경">
+                                <i class="pi pi-bars"></i>
+                            </div>
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <i class="pi pi-bookmark text-2xl flex-shrink-0" :style="{ color: getRecipeBookColorHex(recipeBook.color) }"></i>
+                                <div class="flex-1 min-w-0">
+                                    <div class="recipe-book-name">{{ recipeBook.name }}</div>
+                                    <div class="recipe-book-count">{{ recipeBook.bookmarkCount }}개</div>
+                                </div>
+                            </div>
+
+                            <div class="recipe-book-actions" @click.stop>
+                                <Button icon="pi pi-pencil" text rounded size="small" @click="openRecipeBookDialog(recipeBook)" v-tooltip.top="'수정'" />
+                                <Button icon="pi pi-trash" text rounded size="small" severity="danger" @click="handleDeleteRecipeBook(recipeBook)" v-tooltip.top="'삭제'" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측: 북마크된 레시피 목록 -->
+                <div class="bookmarks-main">
+                    <!-- 레시피북 선택 안 됨 -->
+                    <div v-if="!selectedRecipeBook" class="empty-state bookmarks-inline-empty">
+                        <i class="pi pi-bookmark bookmarks-inline-empty__icon text-gray-300 mb-4" aria-hidden="true"></i>
+                        <h3 class="bookmarks-inline-empty__title bookmarks-section-title text-gray-700 mb-2">레시피북을 선택하세요</h3>
+                        <p class="bookmarks-inline-empty__message text-gray-500">좌측에서 레시피북을 선택하면 저장된 레시피를 볼 수 있습니다</p>
+                    </div>
+
+                    <!-- 레시피북 선택됨 -->
+                    <template v-else>
+                        <!-- 북마크 로딩 -->
+                        <PageStateBlock v-if="bookmarksLoading" state="loading" loading-message="레시피를 불러오는 중..." />
+
+                        <!-- 북마크가 없을 때 -->
+                        <PageStateBlock
+                            v-else-if="bookmarks.length === 0"
+                            compact-mobile
+                            state="empty"
+                            empty-icon="pi pi-bookmark"
+                            empty-title="저장된 레시피가 없습니다"
+                            empty-message="레시피 카드나 상세 페이지에서 북마크 버튼을 눌러 저장해보세요"
+                            empty-button-label="레시피 둘러보기"
+                            @empty-action="browseRecipes"
+                        />
+
+                        <!-- 북마크 목록 (모바일: 그리드 / 데스크톱: 열린 책) -->
+                        <div v-else class="bookmarks-recipes">
+                            <div class="bookmarks-recipes-mobile bookmarks-mobile-only">
+                            <div class="bookmarks-selected-header">
+                                <h3 class="bookmarks-selected-header__title">
+                                    <i class="pi pi-bookmark bookmarks-selected-header__icon" :style="{ color: getRecipeBookColorHex(selectedRecipeBook.color) }" aria-hidden="true"></i>
+                                    {{ selectedRecipeBook.name }}
+                                </h3>
+                                <p class="bookmarks-selected-header__count">{{ selectedRecipeBook.bookmarkCount }}개의 레시피</p>
+                            </div>
+                                <div class="recipe-grid bookmarks-recipe-grid">
+                                    <div v-for="bookmark in bookmarks" :key="bookmark.id" class="bookmarks-grid-item">
+                                <RecipeGridCard
+                                    :recipe="getRecipeGridItem(bookmark)"
+                                    :category-label="getCategoryName(bookmark.recipe)"
+                                    :date-text="formatDate(bookmark.createdAt)"
+                                    :show-favorite="false"
+                                    :show-bookmark="false"
+                                    :show-comment-count="false"
+                                    :show-author="false"
+                                    @click="viewRecipe"
+                                />
+                                <button type="button" class="bookmarks-memo-trigger" @click.stop="openMemoDialog(bookmark)">
+                                    <i class="pi pi-pencil text-sm" aria-hidden="true"></i>
+                                    <span v-if="bookmark.memo" class="bookmarks-memo-trigger__text">{{ bookmark.memo }}</span>
+                                    <span v-else class="bookmarks-memo-trigger__placeholder">메모 추가</span>
+                                </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <OpenBookView
+                            class="bookmarks-recipes-book bookmarks-desktop-only"
+                            :recipe-book="selectedRecipeBook"
+                            :bookmarks="bookmarks"
+                            :get-recipe-grid-item="getRecipeGridItem"
+                            :get-category-name="getCategoryName"
+                            :format-date="formatDate"
+                            @recipe-click="viewRecipe"
+                            @memo-updated="onMemoUpdated"
+                            />
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- 레시피북 생성/수정 Dialog -->
+            <RecipeBookFormDialog v-model:visible="recipeBookDialogVisible" :recipe-book="editingRecipeBook" @recipe-book-created="onRecipeBookCreated" @recipe-book-updated="onRecipeBookUpdated" />
+            <BookmarkMemoDialog
+                v-model:visible="memoDialogVisible"
+                :bookmark-id="memoDialogBookmarkId"
+                :recipe-title="memoDialogRecipeTitle"
+                :memo="memoDialogMemo"
+                :save-async="onMemoSave"
+            />
+        </div>
+    </div>
+</template>
+
+<style scoped lang="scss">
+/* Comments/Inquiries·Favorites와 동일 — page-container--card 패딩 + 오렌지 톤 */
+.bookmarks-root {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.bookmarks-card {
+    background: #ffedd5;
+}
+
+.bookmarks-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.bookmarks-notice__icon {
+    font-size: 1.125rem;
+    color: var(--orange-500, #f97316);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.bookmarks-notice__text {
+    margin: 0;
+    color: #374151;
+    font-style: italic;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+}
+
+@media (max-width: 767px) {
+    .bookmarks-notice {
+        gap: 0.5rem;
+    }
+
+    .bookmarks-notice__icon {
+        font-size: 1.0625rem;
+        margin-top: 0.0625rem;
+    }
+
+    .bookmarks-notice__text {
+        font-size: 0.8125rem;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 480px) {
+    .bookmarks-notice__icon {
+        font-size: 1rem;
+    }
+
+    .bookmarks-notice__text {
+        font-size: 0.75rem;
+        line-height: 1.45;
+    }
+}
+
+.bookmarks-title,
+.bookmarks-section-title,
+.bookmarks-selected-header__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--p-text-color, #374151);
+}
+
+@media (max-width: 767px) {
+    .bookmarks-title,
+    .bookmarks-section-title,
+    .bookmarks-selected-header__title {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bookmarks-title,
+    .bookmarks-section-title,
+    .bookmarks-selected-header__title {
+        font-size: 0.9375rem;
+    }
+}
+
+.bookmarks-selected-header__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.bookmarks-selected-header__icon {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+}
+
+.bookmarks-selected-header__count {
+    margin: 0.25rem 0 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary, #6b7280);
+}
+
+.recipe-book-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+@media (max-width: 767px) {
+    .recipe-book-name {
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .recipe-book-name {
+        font-size: 0.8125rem;
+    }
+}
+
+.recipe-book-header :deep(.bookmarks-action-btn.p-button) {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .recipe-book-header :deep(.bookmarks-action-btn.p-button) {
+        min-height: 0;
+        padding: 0.4375rem 0.75rem;
+        font-size: 0.8125rem;
+        line-height: 1.25;
+    }
+
+    .recipe-book-header :deep(.bookmarks-action-btn .p-button-icon) {
+        font-size: 0.8125rem;
+    }
+
+    .recipe-book-header :deep(.bookmarks-action-btn .p-button-label) {
+        line-height: 1.25;
+    }
+}
+
+@media (max-width: 480px) {
+    .recipe-book-header :deep(.bookmarks-action-btn.p-button) {
+        padding: 0.375rem 0.625rem;
+        font-size: 0.75rem;
+    }
+}
+
+.bookmarks-content {
+    min-width: 0;
+    min-height: 500px;
+}
+
+.bookmarks-recipes {
+    min-width: 0;
+}
+
+.bookmarks-recipe-grid {
+    margin-bottom: 0;
+}
+
+.bookmarks-grid-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.bookmarks-memo-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-color-secondary);
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+.bookmarks-memo-trigger:hover {
+    background: var(--surface-hover);
+    color: var(--primary-color);
+}
+
+.bookmarks-memo-trigger__text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bookmarks-memo-trigger__placeholder {
+    flex: 1;
+    font-style: italic;
+}
+
+.bookmarks-mobile-only {
+    display: block;
+}
+
+.bookmarks-desktop-only {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .bookmarks-mobile-only {
+        display: none;
+    }
+
+    .bookmarks-desktop-only {
+        display: block;
+    }
+}
+
+.bookmarks-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    min-height: 500px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 책 종이 느낌의 내부 카드 (밝은 밀색) */
+.recipe-book-sidebar {
+    background: #fdfbf7;
+    border: 1px solid #f0ebe2;
+    border-radius: 8px;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    padding: 1.25rem;
+
+    @media (max-width: 768px) {
+        padding: 1.25rem;
+    }
+}
+
+.recipe-book-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.empty-recipe-books {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.recipe-book-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.recipe-book-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-right: 0.25rem;
+    border-radius: 6px;
+    color: var(--text-color-secondary);
+    cursor: grab;
+    flex-shrink: 0;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &:hover {
+        color: var(--primary-color);
+        background-color: var(--surface-hover);
+    }
+}
+
+.recipe-book-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+
+    &:hover {
+        background-color: var(--surface-hover);
+        border-color: var(--primary-color);
+    }
+
+    &.recipe-book-item-active {
+        background-color: var(--primary-50);
+        border-color: var(--primary-color);
+    }
+
+    &.recipe-book-item-dragging {
+        opacity: 0.6;
+    }
+
+    &.recipe-book-item-drag-over {
+        border-color: var(--primary-color);
+        background-color: var(--primary-50);
+    }
+}
+
+.recipe-book-count {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+}
+
+.recipe-book-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+
+    .recipe-book-item:hover & {
+        opacity: 1;
+    }
+}
+
+.bookmarks-main {
+    flex: 1;
+    background: #fdfbf7;
+    border: 1px solid #f0ebe2;
+    border-radius: 8px;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    padding: 1.25rem;
+    overflow: hidden;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.bookmarks-inline-empty__icon {
+    font-size: 3rem;
+}
+
+.bookmarks-inline-empty__title {
+    margin: 0;
+}
+
+.bookmarks-inline-empty__message {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.45;
+}
+
+@media (max-width: 767px) {
+    .empty-recipe-books,
+    .empty-state.bookmarks-inline-empty {
+        padding: 2.5rem 1rem;
+    }
+
+    .bookmarks-inline-empty__icon {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .bookmarks-inline-empty__title {
+        font-size: 1rem;
+        margin-bottom: 0.375rem;
+    }
+
+    .bookmarks-inline-empty__message {
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        margin-bottom: 0.75rem;
+    }
+
+    .bookmarks-inline-empty :deep(.bookmarks-inline-empty__action.p-button) {
+        min-height: 0;
+        padding: 0.4375rem 0.75rem;
+        font-size: 0.8125rem;
+        line-height: 1.25;
+    }
+}
+
+@media (max-width: 480px) {
+    .bookmarks-inline-empty__icon {
+        font-size: 2.25rem !important;
+    }
+
+    .bookmarks-inline-empty__title {
+        font-size: 0.9375rem;
+    }
+
+    .bookmarks-inline-empty__message {
+        font-size: 0.75rem;
+    }
+
+    .bookmarks-inline-empty :deep(.bookmarks-inline-empty__action.p-button) {
+        padding: 0.375rem 0.625rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .bookmarks-root.bookmarks-card {
+        background: var(--surface-card, #fff);
+        border-radius: 0;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    .bookmarks-content {
+        min-height: 0;
+    }
+
+    .bookmarks-main {
+        background: var(--surface-card, #fff);
+        border: none;
+        box-shadow: none;
+        padding: 1rem 0.875rem;
+    }
+
+    .recipe-book-sidebar {
+        background: var(--surface-card, #fff);
+        border: none;
+        box-shadow: none;
+        padding: 1rem 0.875rem;
+    }
+}
+</style>

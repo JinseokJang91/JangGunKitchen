@@ -1,0 +1,111 @@
+# JangGunKitchen 프론트: main push / 수동 실행 시 빌드 → S3 동기화 → CloudFront 무효화
+
+name: Frontend deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_NAVER_CLIENT_ID: ${{ vars.VITE_NAVER_CLIENT_ID }}
+          VITE_NAVER_REDIRECT_URI: ${{ vars.VITE_NAVER_REDIRECT_URI }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_REDIRECT_URI: ${{ vars.VITE_GOOGLE_REDIRECT_URI }}
+          VITE_KAKAO_CLIENT_ID: ${{ vars.VITE_KAKAO_CLIENT_ID }}
+          VITE_KAKAO_REDIRECT_URI: ${{ vars.VITE_KAKAO_REDIRECT_URI }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: npm run build
+
+      - name: Verify dist output
+        run: |
+          if [ ! -d dist ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
+            echo "ERROR: frontend/dist 가 비어 있거나 없습니다."
+            exit 1
+          fi
+          echo "dist OK ($(du -sh dist | cut -f1))"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Validate S3 bucket (FRONTEND_S3_BUCKET)
+        env:
+          BUCKET: ${{ vars.FRONTEND_S3_BUCKET }}
+        run: |
+          if [ -z "${BUCKET}" ]; then
+            echo "::error::FRONTEND_S3_BUCKET 변수가 비어 있습니다. Repo → Settings → Secrets and variables → Actions → Variables 에서 설정하세요."
+            exit 1
+          fi
+          set +e
+          err=$(aws s3api head-bucket --bucket "${BUCKET}" 2>&1)
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::S3 버킷 검증 실패: ${BUCKET}"
+            if echo "$err" | grep -q '403'; then
+              echo "403: IAM에서 ListBucket·GetBucketLocation은 arn:aws:s3:::${BUCKET}(공백·/* 없음), PutObject·DeleteObject는 arn:aws:s3:::${BUCKET}/*; 버킷 정책 Deny 여부 확인."
+            elif echo "$err" | grep -qE '404|NoSuchBucket'; then
+              echo "404: 계정에 해당 버킷이 없거나 이름이 다릅니다. S3 콘솔과 FRONTEND_S3_BUCKET 대조."
+            else
+              echo "OIDC 역할·계정·vars.AWS_REGION 과 버킷이 일치하는지 확인하세요."
+            fi
+            echo "$err"
+            exit 1
+          fi
+
+      - name: Sync to S3
+        env:
+          BUCKET: ${{ vars.FRONTEND_S3_BUCKET }}
+        run: |
+          aws s3 sync dist/ "s3://${BUCKET}/" --delete --no-progress
+
+      - name: Invalidate CloudFront
+        env:
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${DISTRIBUTION_ID}" \
+            --paths "/*" \
+            --output text \
+            --query 'Invalidation.Id'
+
+      - name: Verify public URL
+        if: ${{ vars.FRONTEND_VERIFY_URL != '' }}
+        run: |
+          curl -fsSL "${{ vars.FRONTEND_VERIFY_URL }}" -o /dev/null
+          echo "FRONTEND_VERIFY_URL 응답 OK"

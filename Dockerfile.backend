@@ -1,0 +1,31 @@
+# ============================================
+# Stage 1: Build (Gradle - 단일 앱 JAR)
+# ============================================
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /workspace
+
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+COPY backend backend
+
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
+
+RUN ./gradlew :backend:app:bootJar --no-daemon -x test
+
+RUN mkdir -p /out && \
+    cp "$(ls -1 backend/app/build/libs/*.jar | grep -v 'plain\.jar' | head -n 1)" /out/app.jar
+
+# ============================================
+# Stage 2: Run (경량 JRE + JAR만)
+# ============================================
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+COPY --from=builder /out/app.jar /app/app.jar
+
+ENTRYPOINT ["java", "-jar"]
+CMD ["/app/app.jar"]

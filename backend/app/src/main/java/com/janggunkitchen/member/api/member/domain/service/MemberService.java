@@ -1,0 +1,107 @@
+package com.janggunkitchen.member.api.member.domain.service;
+
+import com.janggunkitchen.common.custom.storage.ImageStorage;
+import com.janggunkitchen.common.custom.storage.StorageKeyUtils;
+import com.janggunkitchen.common.domain.entity.Member;
+import com.janggunkitchen.common.domain.enums.MemberRole;
+import com.janggunkitchen.common.domain.repository.MemberRepository;
+import com.janggunkitchen.common.exception.ResourceNotFoundException;
+import com.janggunkitchen.common.utils.PiiMaskUtils;
+import com.janggunkitchen.member.api.member.dto.MemberDto;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+@Slf4j
+public class MemberService {
+    private final MemberRepository memberRepository;
+    private final ImageStorage imageStorage;
+
+    /**
+     * 현재 로그인한 회원 정보 조회 (전체 정보)
+     */
+    public MemberDto getCurrentMember(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId));
+        return toFullMemberDto(member);
+    }
+
+    /**
+     * 특정 회원 정보 조회 (공개 프로필, 민감 정보 제외)
+     */
+    public MemberDto getMemberById(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId));
+        return toPublicMemberDto(member);
+    }
+
+    private static MemberDto toFullMemberDto(Member m) {
+        boolean isAdmin = m.getRole() == MemberRole.ADMIN;
+        return MemberDto.builder()
+                .id(m.getId())
+                .name(m.getName())
+                .nickname(m.getNickname())
+                .email(PiiMaskUtils.maskEmail(m.getEmail()))
+                .phone(PiiMaskUtils.maskPhone(m.getPhone()))
+                .profileImage(m.getProfileImage())
+                .bio(m.getBio())
+                .followerCount(m.getFollowerCount())
+                .followingCount(m.getFollowingCount())
+                .isAdmin(isAdmin)
+                .build();
+    }
+
+    private static MemberDto toPublicMemberDto(Member m) {
+        return MemberDto.builder()
+                .id(m.getId())
+                .name(m.getName())
+                .nickname(m.getNickname())
+                .profileImage(m.getProfileImage())
+                .bio(m.getBio())
+                .followerCount(m.getFollowerCount())
+                .followingCount(m.getFollowingCount())
+                .isAdmin(false)
+                .build();
+    }
+
+    @Transactional
+    public MemberDto updateProfile(Long memberId, String name, String nickname, String bio, MultipartFile profileImage) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId));
+
+        String profileImageUrl = member.getProfileImage();
+
+        // 프로필 이미지 업데이트
+        if (profileImage != null && !profileImage.isEmpty()) {
+            // 기존 이미지 삭제 (있는 경우, 로컬/S3/CloudFront URL 공통 처리)
+            if (member.getProfileImage() != null && member.getProfileImage().contains("/")) {
+                try {
+                    String oldKey = StorageKeyUtils.parseKeyFromImageUrl(member.getProfileImage());
+                    if (oldKey != null) {
+                        imageStorage.deleteByKey(oldKey);
+                    }
+                } catch (Exception e) {
+                    log.warn("기존 프로필 이미지 삭제 실패: {}", e.getMessage());
+                }
+            }
+
+            // 새 이미지 업로드
+            String relativeDir = "profiles/%d/%s".formatted(memberId, LocalDate.now());
+            ImageStorage.UploadResponse uploadResponse = imageStorage.upload(profileImage, relativeDir);
+            profileImageUrl = uploadResponse.url();
+        }
+
+        // 프로필 정보 업데이트
+        member.updateProfile(name, nickname, bio, profileImageUrl);
+        Member updatedMember = memberRepository.save(member);
+        return toFullMemberDto(updatedMember);
+    }
+
+}

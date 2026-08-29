@@ -1,0 +1,118 @@
+package com.janggunkitchen.cook.api.recipe.domain.repository;
+
+import com.janggunkitchen.cook.api.recipe.domain.entity.Recipe;
+import com.janggunkitchen.cook.api.recipe.domain.enums.Status;
+import com.janggunkitchen.cook.api.recipe.domain.enums.Visibility;
+import com.querydsl.core.Tuple;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.janggunkitchen.cook.api.recipe.domain.entity.QRecipe.recipe;
+import static com.janggunkitchen.cook.api.recipe.domain.entity.QRecipeCategory.recipeCategory;
+
+
+@Repository
+@RequiredArgsConstructor
+public class RecipeRepositoryImpl implements RecipeRepositoryCustom {
+    private final JPAQueryFactory queryFactory;
+
+    @Override
+    public List<Recipe> findPublishedPublicRecipes() {
+        return queryFactory
+                .selectFrom(recipe)
+                .where(
+                        recipe.status.eq(Status.PUBLISHED),
+                        recipe.visibility.eq(Visibility.PUBLIC)
+                )
+                .orderBy(recipe.createdAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<Recipe> findMemberRecipes(Long memberId) {
+        return queryFactory
+                .selectFrom(recipe)
+                .where(
+                        recipe.memberId.eq(memberId)
+                )
+                .orderBy(recipe.createdAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<Recipe> searchRecipesByTitle(String keyword) {
+        return queryFactory
+                .selectFrom(recipe)
+                .where(
+                        recipe.status.eq(Status.PUBLISHED),
+                        recipe.visibility.eq(Visibility.PUBLIC),
+                        recipe.title.containsIgnoreCase(keyword)
+                )
+                .orderBy(recipe.createdAt.desc())
+                .fetch();
+    }
+    
+    @Override
+    public List<Recipe> findRecentRecipesByCategory(String codeGroup, String detailCodeId, LocalDateTime since, Pageable pageable) {
+        return queryFactory
+                .selectFrom(recipe)
+                .join(recipe.recipeCategories, recipeCategory)
+                .where(
+                        recipe.status.eq(Status.PUBLISHED),
+                        recipe.visibility.eq(Visibility.PUBLIC),
+                        recipeCategory.codeGroup.eq(codeGroup),
+                        recipeCategory.detail.id.detailCodeId.eq(detailCodeId),
+                        recipe.createdAt.after(since)
+                )
+                .orderBy(recipe.createdAt.desc())
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+    }
+    
+    @Override
+    public List<Recipe> findRecentPopularRecipes(Pageable pageable) {
+        return queryFactory
+                .selectFrom(recipe)
+                .where(
+                        recipe.status.eq(Status.PUBLISHED),
+                        recipe.visibility.eq(Visibility.PUBLIC)
+                )
+                .orderBy(recipe.hits.desc(), recipe.createdAt.desc())
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+    }
+
+    @Override
+    public List<Object[]> findCreatorStats(Pageable pageable) {
+        List<Tuple> tuples = queryFactory
+                .select(recipe.memberId, recipe.memberId.count(), recipe.hits.sum())
+                .from(recipe)
+                .where(
+                        recipe.status.eq(Status.PUBLISHED),
+                        recipe.visibility.eq(Visibility.PUBLIC)
+                )
+                .groupBy(recipe.memberId)
+                .orderBy(recipe.hits.sum().desc())
+                .limit(pageable.getPageSize())
+                .offset(pageable.getOffset())
+                .fetch();
+
+        List<Object[]> result = new ArrayList<>();
+        for (Tuple tuple : tuples) {
+            result.add(new Object[]{
+                    tuple.get(recipe.memberId),
+                    tuple.get(recipe.memberId.count()),
+                    tuple.get(recipe.hits.sum())
+            });
+        }
+        return result;
+    }
+}

@@ -1,0 +1,45 @@
+{
+    "name": "janggunkitchen",
+    "version": "4.3.0",
+    "scripts": {
+        "dev": "vite",
+        "local": "vite --mode localdev",
+        "build": "vue-tsc && vite build",
+        "preview": "vite preview",
+        "lint": "eslint . --fix",
+        "type-check": "vue-tsc --noEmit"
+    },
+    "dependencies": {
+        "@primeuix/themes": "^1.0.0",
+        "@toast-ui/editor": "^3.2.2",
+        "pinia": "^3.0.4",
+        "primeicons": "^7.0.0",
+        "primevue": "^4.3.1",
+        "tailwindcss-primeui": "^0.5.0",
+        "vue": "^3.4.34",
+        "vue-router": "^4.4.0"
+    },
+    "devDependencies": {
+        "@eslint/config-array": "^0.21.0",
+        "@eslint/js": "^9.33.0",
+        "@eslint/object-schema": "^2.1.6",
+        "@primevue/auto-import-resolver": "^4.3.1",
+        "@types/node": "^22.10.2",
+        "@typescript-eslint/eslint-plugin": "^8.18.0",
+        "@typescript-eslint/parser": "^8.18.0",
+        "@vitejs/plugin-vue": "^6.0.1",
+        "@vue/eslint-config-prettier": "^9.0.0",
+        "@vue/tsconfig": "^0.7.0",
+        "autoprefixer": "^10.4.19",
+        "eslint": "^9.33.0",
+        "eslint-plugin-vue": "^9.23.0",
+        "postcss": "^8.4.40",
+        "prettier": "^3.2.5",
+        "sass": "^1.55.0",
+        "tailwindcss": "^3.4.6",
+        "typescript": "^5.7.2",
+        "unplugin-vue-components": "^0.27.3",
+        "vite": "^7.1.2",
+        "vue-tsc": "^2.2.12"
+    }
+}

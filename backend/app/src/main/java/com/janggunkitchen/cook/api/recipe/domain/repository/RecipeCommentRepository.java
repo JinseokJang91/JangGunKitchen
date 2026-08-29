@@ -1,0 +1,58 @@
+package com.janggunkitchen.cook.api.recipe.domain.repository;
+
+import com.janggunkitchen.cook.api.recipe.domain.entity.Recipe;
+import com.janggunkitchen.cook.api.recipe.domain.entity.RecipeComment;
+import com.janggunkitchen.cook.api.recipe.domain.enums.Status;
+import com.janggunkitchen.cook.api.recipe.domain.enums.Visibility;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface RecipeCommentRepository extends JpaRepository<RecipeComment, Long> {
+    // 특정 레시피의 모든 댓글 조회 (최신순)
+    List<RecipeComment> findAllByRecipeOrderByCreatedAtDesc(Recipe recipe);
+    
+    // 특정 레시피의 최상위 댓글만 조회 (parentId가 null인 댓글) - Pagination 지원
+    Page<RecipeComment> findAllByRecipeAndParentIdIsNullOrderByCreatedAtDesc(Recipe recipe, Pageable pageable);
+    
+    // 특정 댓글의 대댓글 조회
+    List<RecipeComment> findAllByParentIdOrderByCreatedAtAsc(Long parentId);
+    
+    // 특정 레시피의 댓글 개수(대댓글 제외)
+    @Query("SELECT count(rc.id) FROM RecipeComment rc WHERE rc.recipe = :recipe AND rc.parentId IS NULL")
+    long countByRecipe(Recipe recipe);
+    
+    // 여러 레시피의 댓글 개수를 한 번에 조회 (N+1 문제 해결)
+    @Query("SELECT rc.recipe.id, count(rc.id) FROM RecipeComment rc WHERE rc.recipe IN :recipes AND rc.parentId IS NULL GROUP BY rc.recipe.id")
+    List<Object[]> countByRecipes(List<Recipe> recipes);
+    
+    // 특정 사용자가 작성한 댓글 조회
+    List<RecipeComment> findAllByMemberIdOrderByCreatedAtDesc(Long memberId);
+
+    // 특정 사용자가 작성한 댓글 조회 (페이징)
+    Page<RecipeComment> findAllByMemberIdOrderByCreatedAtDesc(Long memberId, Pageable pageable);
+
+    /** 회원이 작성한 댓글 중 게시·공개 레시피에 달린 것만 (카테고리/찜 목록과 동일 노출 조건) */
+    @Query("""
+            SELECT rc FROM RecipeComment rc
+            JOIN rc.recipe r
+            WHERE rc.memberId = :memberId
+              AND r.status = :status
+              AND r.visibility = :visibility
+            ORDER BY rc.createdAt DESC
+            """)
+    Page<RecipeComment> findByMemberIdOnPublishedPublicRecipes(
+            @Param("memberId") Long memberId,
+            @Param("status") Status status,
+            @Param("visibility") Visibility visibility,
+            Pageable pageable);
+
+    // 특정 레시피의 댓글 개수 조회 (recipeId 기준)
+    long countByRecipeId(Long recipeId);
+}

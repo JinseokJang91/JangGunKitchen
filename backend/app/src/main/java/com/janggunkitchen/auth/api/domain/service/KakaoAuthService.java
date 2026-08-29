@@ -1,0 +1,152 @@
+package com.janggunkitchen.auth.api.domain.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.janggunkitchen.auth.api.dto.KakaoUserDTO;
+import com.janggunkitchen.auth.api.utils.LoginFormatter;
+import com.janggunkitchen.auth.api.web.response.TokenResponse;
+import com.janggunkitchen.common.domain.entity.Member;
+import com.janggunkitchen.common.domain.enums.Active;
+import com.janggunkitchen.common.domain.enums.SocialRole;
+import com.janggunkitchen.common.domain.repository.MemberRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class KakaoAuthService {
+    @Value("${kakao.client.id}")
+    private String clientId;
+    @Value("${kakao.client.secret}")
+    private String clientSecret;
+    @Value("${kakao.redirect.uri}")
+    private String redirectUri;
+
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
+    private final TokenService tokenService;
+    private final MemberRepository memberRepository;
+
+    private static final String TOKEN_URL = "https://kauth.kakao.com/oauth/token";
+    private static final String USER_INFO_URL = "https://kapi.kakao.com/v2/user/me";
+    /** {@link Member#getName()} 컬럼 length와 동일 */
+    private static final int MEMBER_NAME_MAX_LEN = 20;
+
+    public TokenResponse kakaoLoginProcess(String code) throws JsonProcessingException {
+        // 액세스 토큰 요청
+        String accessToken = getAccessToken(code);
+
+        // 사용자 정보 요청
+        KakaoUserDTO kakaoUserDTO = getUserInfo(accessToken);
+
+        // 1. DB에서 사용자 조회/없으면 생성 (이메일 + 소셜 역할로 조회)
+        Member member = memberRepository.findByEmailAndSocialRole(kakaoUserDTO.getEmail(), SocialRole.KAKAO)
+                .orElse(null);
+
+        if (member == null) {
+            String profileImage = kakaoUserDTO.getProperties() != null ? kakaoUserDTO.getProperties().getProfileImage() : null;
+            member = memberRepository.save(
+                    Member.builder()
+                            .name(resolveKakaoMemberName(kakaoUserDTO))
+                            .nickname(kakaoUserDTO.getNickname())
+                            .phone(LoginFormatter.formatPhoneNumber(kakaoUserDTO.getPhoneNumber()))
+                            .email(kakaoUserDTO.getEmail())
+                            .birth(LoginFormatter.formatBirth(kakaoUserDTO.getBirthyear(), kakaoUserDTO.getBirthday()))
+                            .profileImage(profileImage)
+                            .isActive(Active.TRUE)
+                            .socialRole(SocialRole.KAKAO)
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build()
+            );
+        }
+
+        // 2. JWT 토큰 발급 (socialRole + role(USER/ADMIN) 세팅)
+        return tokenService.loginWithMember(member);
+    }
+
+    private String getAccessToken(String code) throws JsonProcessingException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("grant_type", "authorization_code");
+        params.add("client_id", clientId);
+        params.add("client_secret", clientSecret);
+        params.add("code", code);
+        params.add("redirect_uri", redirectUri);
+
+        HttpEntity<MultiValueMap<String, String>> tokenRequest = new HttpEntity<>(params, headers);
+
+        ResponseEntity<String> tokenResponse =
+                restTemplate.postForEntity(TOKEN_URL, tokenRequest, String.class);
+
+        // 1) HTTP Status 체크 (body는 토큰 포함 가능하므로 로그/예외에 넣지 않음)
+        if (!tokenResponse.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Kakao token API error: " + tokenResponse.getStatusCode());
+        }
+
+        JsonNode tokenJson = objectMapper.readTree(tokenResponse.getBody());
+
+        // 2) access_token 존재 여부 체크
+        JsonNode accessTokenNode = tokenJson.get("access_token");
+        if (accessTokenNode == null || accessTokenNode.isNull()) {
+            throw new RuntimeException("Failed to get access_token from Kakao");
+        }
+
+        return accessTokenNode.asText();
+    }
+
+
+    private KakaoUserDTO getUserInfo(String accessToken) throws JsonProcessingException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<String> userInfoRequest = new HttpEntity<>(headers);
+        ResponseEntity<String> userInfoResponse = restTemplate.exchange(
+                USER_INFO_URL, HttpMethod.GET, userInfoRequest, String.class
+        );
+
+        if (!userInfoResponse.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Kakao user info API error: " + userInfoResponse.getStatusCode());
+        }
+
+        return objectMapper.readValue(userInfoResponse.getBody(), KakaoUserDTO.class);
+    }
+
+    /**
+     * 카카오는 사업자 미등록 시 실명(name) 동의를 줄 수 없어 {@code kakao_account.name}이 비는 경우가 있다.
+     * 그때는 프로필 닉네임을 {@link Member#getName()}에 사용한다.
+     */
+    private static String resolveKakaoMemberName(KakaoUserDTO kakaoUser) {
+        if (StringUtils.hasText(kakaoUser.getName())) {
+            return truncateMemberName(kakaoUser.getName().trim());
+        }
+        if (StringUtils.hasText(kakaoUser.getNickname())) {
+            return truncateMemberName(kakaoUser.getNickname().trim());
+        }
+        String email = kakaoUser.getEmail();
+        if (StringUtils.hasText(email) && email.contains("@")) {
+            return truncateMemberName(email.substring(0, email.indexOf('@')));
+        }
+        return "카카오회원";
+    }
+
+    private static String truncateMemberName(String value) {
+        if (value.length() <= MEMBER_NAME_MAX_LEN) {
+            return value;
+        }
+        return value.substring(0, MEMBER_NAME_MAX_LEN);
+    }
+}

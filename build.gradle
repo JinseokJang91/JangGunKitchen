@@ -1,0 +1,40 @@
+plugins {
+	id 'org.springframework.boot' apply false
+	id 'io.spring.dependency-management' apply false
+}
+
+ext {
+    javaVersion = 21
+    springBootVersion = '3.5.3'
+    jjwtVersion = '0.11.5'
+}
+
+allprojects {
+	group = 'com.janggunkitchen'
+	version = '0.0.1-SNAPSHOT'
+
+	repositories {
+		mavenCentral()
+	}
+}
+
+subprojects {
+	apply plugin: 'java'
+
+	java {
+		sourceCompatibility = JavaVersion.VERSION_21
+		targetCompatibility = JavaVersion.VERSION_21
+
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(21)
+		}
+	}
+
+	tasks.withType(JavaCompile).configureEach {
+		options.encoding = 'UTF-8'
+	}
+
+	tasks.named('test') {
+		useJUnitPlatform()
+	}
+}

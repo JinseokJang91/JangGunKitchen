@@ -1,0 +1,15 @@
+/* 메인 */
+
+@use './variables/_common';
+@use './_mixins'; // 믹스인
+@use './_core'; // 전체
+@use './_main'; // 메인 화면
+@use './_topbar'; // 상단바
+@use './_footer';
+@use './_page-container'; // 공통 페이지 래퍼 (좌우 여백 통일)
+@use './_responsive'; // 반응형
+@use './_utils'; // 유틸
+@use './_typography'; // 타이포그래피
+@use './_recipe-sort-buttons'; // 레시피 정렬 버튼 오렌지 테마
+@use './_recipe-card-list'; // 레시피 목록 카드 공통 (Category, SearchResult, Favorites)
+@use './_recipe-form'; // 레시피 등록·수정 폼 (RecipeCreate, RecipeEdit)

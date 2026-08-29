@@ -1,0 +1,176 @@
+# JangGunKitchen 백엔드: Gradle 빌드 → Docker 이미지 → EC2로 전달 후 compose 기동
+
+name: Backend deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'infra/**'
+      - 'docker-compose.yml'
+      - 'Dockerfile.backend'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle/**'
+      - 'gradlew'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: janggunkitchen-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build backend (tests + JAR)
+        run: |
+          ./gradlew :backend:app:build --no-daemon
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        run: docker build -f Dockerfile.backend -t "${IMAGE_NAME}:${{ github.sha }}" .
+
+      - name: Save image for EC2
+        run: docker save "${IMAGE_NAME}:${{ github.sha }}" | gzip -1 > backend-image.tar.gz
+
+      - name: Pack deploy bundle
+        run: |
+          mkdir -p bundle/scripts
+          mv backend-image.tar.gz bundle/
+          cp docker-compose.yml Dockerfile.backend bundle/
+          cp infra/scripts/*.sh bundle/scripts/
+          tar czf deploy.tar.gz -C bundle .
+
+      - name: Upload deploy bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-bundle
+          path: deploy.tar.gz
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_PATH: ${{ vars.BACKEND_DEPLOY_PATH || '/home/ubuntu/janggunkitchen' }}
+    steps:
+      - name: Download deploy bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-bundle
+
+      - name: Require SSH host fingerprint
+        env:
+          FINGERPRINT: ${{ vars.EC2_SSH_HOST_FINGERPRINT }}
+        run: |
+          if [ -z "${FINGERPRINT}" ]; then
+            echo "::error::Repository 변수 EC2_SSH_HOST_FINGERPRINT 를 설정하세요. (예: ssh-keyscan -t rsa,ecdsa,ed25519 -p 22 HOST | ssh-keygen -lf - -E sha256)"
+            exit 1
+          fi
+
+      - name: Log deploy context
+        run: |
+          echo "commit=${{ github.sha }}"
+          echo "image=${IMAGE_NAME}:${{ github.sha }}"
+          echo "deploy_path=${DEPLOY_PATH}"
+
+      - name: Ensure deploy directory on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.EC2_SSH_HOST_FINGERPRINT }}
+          script_stop: true
+          envs: DEPLOY_PATH
+          script: mkdir -p "$DEPLOY_PATH"
+
+      - name: Copy deploy bundle to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.EC2_SSH_HOST_FINGERPRINT }}
+          source: deploy.tar.gz
+          target: ${{ env.DEPLOY_PATH }}
+
+      - name: Install on EC2 and restart stack
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          SECRET_ID: ${{ vars.SECRET_ID }}
+          AWS_REGION_FOR_SECRETS: ${{ vars.AWS_REGION }}
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          fingerprint: ${{ vars.EC2_SSH_HOST_FINGERPRINT }}
+          script_stop: true
+          envs: GITHUB_SHA,SECRET_ID,AWS_REGION_FOR_SECRETS,DEPLOY_PATH
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            tar xzf deploy.tar.gz
+            chmod +x scripts/*.sh 2>/dev/null || true
+
+            echo "=== [disk] before cleanup ==="
+            df -h /
+            docker image prune -af || true
+            rm -f backend-image.tar.gz.old 2>/dev/null || true
+            echo "=== [disk] after cleanup ==="
+            df -h /
+
+            gunzip -c backend-image.tar.gz | docker load
+            export BACKEND_IMAGE_REPO=janggunkitchen-backend
+            export BACKEND_IMAGE_TAG="$GITHUB_SHA"
+            if [ -n "${SECRET_ID:-}" ] && [ -f scripts/fetch-secrets-to-env.sh ]; then
+              export AWS_REGION="${AWS_REGION_FOR_SECRETS:-ap-northeast-2}"
+              export OUTPUT_FILE="./.env.secrets"
+              bash scripts/fetch-secrets-to-env.sh
+            fi
+            docker compose up -d --no-build
+            docker image prune -f || true
+            rm -f deploy.tar.gz
+
+      - name: Health check
+        if: ${{ vars.BACKEND_HEALTHCHECK_URL != '' }}
+        env:
+          HEALTH_URL: ${{ vars.BACKEND_HEALTHCHECK_URL }}
+        run: |
+          set -e
+          for attempt in $(seq 1 30); do
+            if curl -fsSL --connect-timeout 10 --max-time 30 "$HEALTH_URL"; then
+              echo "Health check OK (attempt ${attempt})"
+              exit 0
+            fi
+            echo "Health check attempt ${attempt}/30 failed, waiting 15s..."
+            sleep 15
+          done
+          echo "::error::Health check failed after 30 attempts (~7.5 min)"
+          exit 1

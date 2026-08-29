@@ -1,0 +1,37 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: ${BACKEND_IMAGE_REPO:-janggunkitchen-backend}:${BACKEND_IMAGE_TAG:-latest}
+    container_name: janggunkitchen_app
+    restart: unless-stopped
+    env_file:
+      - ./.env.secrets
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: 8080
+    command: ["/app/app.jar", "--server.port=8080"]
+    depends_on:
+      postgres-db:
+        condition: service_started
+        required: false
+
+  postgres-db:
+    profiles: ["local"]
+    image: postgres:17
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-janggunkitchen_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-janggunkitchen_local_password}
+      POSTGRES_DB: ${POSTGRES_DB:-janggunkitchen_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
