@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
-import ProgressSpinner from 'primevue/progressspinner';
+import Skeleton from 'primevue/skeleton';
 import { getIngredientGroups, getIngredients } from '@/api/ingredientApi';
 import type { IngredientGroup, Ingredient, IngredientType } from '@/types/ingredient';
 import IngredientGroupSelector from './IngredientGroupSelector.vue';
@@ -20,9 +20,13 @@ const emit = defineEmits<{
     (e: 'group-selected', groupId: number | null): void;
 }>();
 
+/** 로딩 스켈레톤 카드 수 (한 화면 그리드 분량) */
+const SKELETON_CARD_COUNT = 12;
+
 const groups = ref<IngredientGroup[]>([]);
 const ingredients = ref<Ingredient[]>([]);
-const loading = ref(false);
+// 진입 직후 스피너/빈 화면 깜빡임을 막기 위해 초기값을 true로 둔다
+const loading = ref(true);
 const error = ref<string | null>(null);
 const localSearchQuery = ref(props.searchQuery || '');
 const selectedGroupId = ref<number | null>(props.selectedGroupId || null);
@@ -115,10 +119,14 @@ onMounted(() => {
         <!-- 그룹 선택 ↔ 재료 목록 구분 -->
         <div class="list-section-divider" aria-hidden="true"></div>
 
-        <!-- 로딩 상태 -->
-        <div v-if="loading" class="list-state list-state--loading text-center py-8">
-            <ProgressSpinner />
-            <p class="list-state__hint">재료를 불러오는 중...</p>
+        <!-- 로딩: 실제 그리드와 같은 레이아웃으로 높이 예약 -->
+        <div v-if="loading" class="ingredient-skeleton-grid" aria-busy="true" aria-label="재료 불러오는 중">
+            <div v-for="i in SKELETON_CARD_COUNT" :key="`ingredient-skeleton-${i}`" class="ingredient-skeleton-card">
+                <div class="ingredient-skeleton-card__image-wrap">
+                    <Skeleton shape="circle" width="100%" height="100%" />
+                </div>
+                <Skeleton width="70%" height="0.875rem" border-radius="6px" />
+            </div>
         </div>
 
         <!-- 에러 상태 -->
@@ -167,6 +175,73 @@ onMounted(() => {
     }
 }
 
+/* IngredientGrid와 동일한 열 구성 */
+.ingredient-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.ingredient-skeleton-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 1px solid rgba(180, 150, 110, 0.2);
+    border-radius: 16px;
+    background: linear-gradient(165deg, #fefcf9 0%, #faf6f1 50%, #f5f0e8 100%);
+    box-sizing: border-box;
+}
+
+.ingredient-skeleton-card__image-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+}
+
+.ingredient-skeleton-card__image-wrap :deep(.p-skeleton) {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (max-width: 1024px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+        gap: 12px;
+    }
+
+    .ingredient-skeleton-card {
+        padding: 14px;
+        border-radius: 14px;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .ingredient-skeleton-card {
+        padding: 12px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .ingredient-skeleton-grid {
+        gap: 8px;
+    }
+}
+
 .list-state__icon {
     display: inline-block;
     font-size: 3rem;
@@ -211,7 +286,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-    .list-state--loading,
     .list-state--error,
     .list-state--empty {
         padding-top: 1.5rem;

@@ -9,6 +9,7 @@ import SelectButton from 'primevue/selectbutton';
 import Select from 'primevue/select';
 import Paginator from 'primevue/paginator';
 import type { PageState } from 'primevue/paginator';
+import Skeleton from 'primevue/skeleton';
 import PageStateBlock from '@/components/common/PageStateBlock.vue';
 import RecipeGridCard from '@/components/recipe/RecipeGridCard.vue';
 import BookmarkDialog from '@/components/bookmark/BookmarkDialog.vue';
@@ -39,7 +40,8 @@ const categorySearchSelected = ref<CategorySearchItem | null>(null);
 const categorySearchSuggestions = ref<CategorySearchItem[]>([]);
 const first = ref<number>(0);
 const rows = ref<number>(12);
-const loading = ref<boolean>(false);
+// 진입 직후 빈 화면 깜빡임을 막기 위해 초기값을 true로 둔다
+const loading = ref<boolean>(true);
 const error = ref<string | null>(null);
 
 // 쇼트컷 모드 (AppTopbar 카테고리 드롭다운에서 진입)
@@ -611,8 +613,11 @@ onMounted(() => {
                     <div class="recipe-section-header__leading">
                         <h2 class="category-recipe-title font-bold text-gray-900 m-0">{{ getCategoryTitle() }}</h2>
                         <div class="recipe-count-bubble recipe-count-bubble--category">
-                            <span class="text-primary font-bold">{{ totalDisplayRecipes.toLocaleString() }}</span>
-                            개의 레시피가 준비되어 있어요!
+                            <Skeleton v-if="loading" width="11rem" height="1rem" border-radius="6px" />
+                            <template v-else>
+                                <span class="text-primary font-bold">{{ totalDisplayRecipes.toLocaleString() }}</span>
+                                개의 레시피가 준비되어 있어요!
+                            </template>
                         </div>
                     </div>
                     <div class="recipe-section-header__controls">
@@ -629,8 +634,10 @@ onMounted(() => {
                 </div>
             </div>
 
-            <!-- 로딩 / 에러 / 빈 상태 -->
-            <PageStateBlock v-if="loading" state="loading" loading-message="레시피를 불러오는 중..." />
+            <!-- 로딩: 실제 그리드와 같은 레이아웃으로 높이 예약 -->
+            <div v-if="loading" class="recipe-grid" aria-busy="true" aria-label="레시피 불러오는 중">
+                <Skeleton v-for="i in rows" :key="`recipe-skeleton-${i}`" height="320px" border-radius="12px" />
+            </div>
             <PageStateBlock v-else-if="error" state="error" error-title="레시피를 불러올 수 없습니다" :error-message="error" retry-label="다시 시도" @retry="loadRecipes" />
             <div v-else-if="displayRecipes.length === 0" class="recipe-grid recipe-grid--empty-state">
                 <PageStateBlock

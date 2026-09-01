@@ -111,7 +111,7 @@ defineExpose({
             <div>
                 <h2 class="section-title">
                     <i class="pi pi-sparkles"></i>
-                    오늘의 레시피 추천
+                    오늘의 추천 레시피
                 </h2>
                 <p class="section-subtitle" v-if="recommendations">
                     {{ recommendations.recommendationType === 'PERSONALIZED' ? '당신을 위한 맞춤 추천 레시피를 확인해보세요' : '오늘의 인기 레시피를 확인해보세요' }}
