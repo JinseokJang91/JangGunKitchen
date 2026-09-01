@@ -26,10 +26,6 @@ services:
     env_file:
       - path: ./.env.secrets
         required: false
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-janggunkitchen_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-janggunkitchen_local_password}
-      POSTGRES_DB: ${POSTGRES_DB:-janggunkitchen_db}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
