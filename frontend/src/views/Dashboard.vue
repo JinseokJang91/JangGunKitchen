@@ -35,7 +35,7 @@ const timeBasedGreeting = computed(() => {
     } else {
         return {
             theme: 'evening',
-            icon: '🌙',
+            icon: '🌃',
             message: '오늘 하루 정말 수고하셨어요.',
             subtitle: '새로운 레시피를 발견해보세요'
         };
@@ -63,7 +63,7 @@ const greetingTitle = computed(() => {
                 </div>
             </section>
 
-            <!-- 2. 오늘의 레시피 추천 (주요 섹션) -->
+            <!-- 2. 오늘의 추천 레시피 (주요 섹션) -->
             <section class="dashboard-section main-section">
                 <div class="section-wrapper">
                     <TodayRecommendations />
