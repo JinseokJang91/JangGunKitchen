@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Button from 'primevue/button';
+import Tag from 'primevue/tag';
 import type { RecipeDetail, RecipeImage } from '@/types/recipe';
 import { resolveMediaUrl, resolveProfileImage } from '@/utils/image';
 
@@ -20,7 +21,19 @@ const props = defineProps<{
     followDisabled?: boolean;
 }>();
 
-const hasCookingTipsMeta = computed(() => !!(props.cookingTipsData.servings || props.cookingTipsData.cookingTime || props.cookingTipsData.difficulty));
+const metaParts = computed(() => {
+    const parts: string[] = [];
+    if (props.cookingTipsData.cookingTime) parts.push(props.cookingTipsData.cookingTime);
+    if (props.cookingTipsData.servings) parts.push(props.cookingTipsData.servings);
+    if (props.cookingTipsData.difficulty) parts.push(props.cookingTipsData.difficulty);
+    return parts;
+});
+
+const categoryLabels = computed(() =>
+    (props.recipe.categories || [])
+        .map((c) => c.detailName || c.codeName)
+        .filter((label): label is string => !!label)
+);
 
 defineEmits<{
     'go-back': [];
@@ -32,19 +45,19 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="recipe-detail-header bg-white rounded-xl shadow-lg overflow-hidden mb-6 md:rounded-2xl md:mb-8">
-        <!-- 메인 이미지 -->
-        <div class="recipe-detail-header__image relative w-full h-96 bg-white">
-            <img v-if="mainImage" :src="resolveMediaUrl(mainImage.url)" :alt="recipe.title" class="w-full mx-auto h-full object-cover" />
-            <div v-else class="flex items-center justify-center h-full text-white text-6xl">🍳</div>
+    <div class="recipe-detail-header">
+        <!-- 메인 이미지: contain + 웜 배경 (카드와 동일 정책) -->
+        <div class="recipe-detail-header__image">
+            <img v-if="mainImage" :src="resolveMediaUrl(mainImage.url)" :alt="recipe.title" class="recipe-detail-header__img" />
+            <div v-else class="recipe-detail-header__img-empty" aria-hidden="true">
+                <i class="pi pi-image"></i>
+            </div>
 
-            <!-- 뒤로가기 버튼 -->
-            <div class="recipe-detail-header__fab recipe-detail-header__fab--back absolute z-10">
+            <div class="recipe-detail-header__fab recipe-detail-header__fab--back">
                 <Button class="recipe-hero-btn recipe-hero-btn--back" @click="$emit('go-back')" icon="pi pi-arrow-left" size="large" rounded aria-label="뒤로가기" />
             </div>
 
-            <!-- 액션 버튼 (좋아요, 북마크) -->
-            <div class="recipe-detail-header__fab recipe-detail-header__fab--actions absolute z-10 flex gap-2">
+            <div class="recipe-detail-header__fab recipe-detail-header__fab--actions">
                 <Button
                     class="recipe-hero-btn recipe-hero-btn--like"
                     :class="{ 'recipe-hero-btn--liked': isLiked }"
@@ -68,68 +81,17 @@ defineEmits<{
             </div>
         </div>
 
-        <!-- 레시피 기본 정보 -->
-        <div class="recipe-detail-header__body p-4 sm:p-6 md:p-8">
-            <div class="recipe-detail-header__main flex items-start justify-between mb-4 md:mb-6">
-                <div class="flex-1 min-w-0">
-                    <h1 class="recipe-detail-header__title font-bold mb-3 md:mb-4">{{ recipe.title }}</h1>
-                    <div class="recipe-intro-bubble" v-if="recipe.introduction">
-                        <p class="recipe-intro-bubble__text">{{ recipe.introduction }}</p>
-                    </div>
-
-                    <!-- 태그 -->
-                    <div class="flex flex-wrap gap-1.5 sm:gap-2 mb-3 md:mb-4">
-                        <span v-for="category in recipe.categories" :key="`${category.codeId}-${category.detailCodeId}`" class="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-amber-100 text-amber-800 rounded-full text-xs sm:text-sm font-medium">
-                            {{ category.detailName || category.codeName }}
-                        </span>
-                    </div>
-
-                    <!-- 요리 팁(인분·시간·난이도) + 통계: 팁이 없어도 조회/댓글/찜은 항상 표시 -->
-                    <div class="recipe-detail-header__tips flex items-center justify-between gap-4 md:gap-6 mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg md:rounded-lg" :class="{ 'recipe-detail-header__tips--stats-only': !hasCookingTipsMeta }">
-                        <div v-if="hasCookingTipsMeta" class="recipe-detail-header__tips-meta flex flex-nowrap items-center gap-1.5 min-w-0 sm:gap-3 md:gap-6">
-                            <div v-if="cookingTipsData.servings" class="recipe-detail-header__tip-item flex items-center gap-1 min-w-0 sm:gap-2">
-                                <i class="pi pi-users recipe-detail-header__tip-icon text-gray-600 shrink-0"></i>
-                                <span class="recipe-detail-header__tip-text text-gray-700 font-medium truncate">{{ cookingTipsData.servings }}</span>
-                            </div>
-                            <div v-if="cookingTipsData.cookingTime" class="recipe-detail-header__tip-item flex items-center gap-1 min-w-0 sm:gap-2">
-                                <i class="pi pi-clock recipe-detail-header__tip-icon text-gray-600 shrink-0"></i>
-                                <span class="recipe-detail-header__tip-text text-gray-700 font-medium truncate">{{ cookingTipsData.cookingTime }}</span>
-                            </div>
-                            <div v-if="cookingTipsData.difficulty" class="recipe-detail-header__tip-item flex items-center gap-1 min-w-0 sm:gap-2">
-                                <i class="pi pi-star recipe-detail-header__tip-icon text-yellow-600 shrink-0"></i>
-                                <span class="recipe-detail-header__tip-text text-gray-700 font-medium truncate">{{ cookingTipsData.difficulty }}</span>
-                            </div>
-                        </div>
-                        <div class="recipe-detail-header__stats flex items-center text-gray-600 shrink-0" :class="{ 'recipe-detail-header__stats--below-tips': hasCookingTipsMeta }">
-                            <div class="recipe-detail-header__stat-cell text-center px-2 sm:px-4">
-                                <div class="recipe-detail-header__stat-value text-gray-600">{{ formatNumber(recipe.hits) }}</div>
-                                <div class="recipe-detail-header__stat-label">조회수</div>
-                            </div>
-                            <div class="recipe-detail-header__stat-cell text-center px-2 sm:px-4">
-                                <div class="recipe-detail-header__stat-value text-gray-600">{{ formatNumber(recipe.stats?.totalComments) }}</div>
-                                <div class="recipe-detail-header__stat-label">댓글</div>
-                            </div>
-                            <div class="recipe-detail-header__stat-cell text-center px-2 sm:px-4">
-                                <div class="recipe-detail-header__stat-value text-red-600">{{ formatNumber(recipe.stats?.favoriteCount) }}</div>
-                                <div class="recipe-detail-header__stat-label">찜</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 작성자 정보: 닉네임과 팔로우 버튼 동일 행(모바일 포함) -->
-            <div class="recipe-detail-header__author flex flex-row items-center justify-between gap-2 py-3 sm:py-4 border-t border-gray-200 min-w-0">
-                <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                    <div class="w-11 h-11 sm:w-12 sm:h-12 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden cursor-pointer shrink-0 hover:opacity-80 transition-opacity" @click="$emit('go-to-author-profile')">
-                        <img v-if="recipe.memberProfileImage" :src="resolveProfileImage(recipe.memberProfileImage)" alt="작성자 프로필" class="w-full h-full object-cover" />
-                        <i v-else class="pi pi-user text-gray-600"></i>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="text-base sm:text-lg font-medium text-gray-800 cursor-pointer hover:text-primary-600 transition-colors truncate" @click="$emit('go-to-author-profile')">
-                            {{ recipe.memberNickname || recipe.memberName }}
-                        </div>
-                    </div>
+        <div class="recipe-detail-header__body">
+            <!-- 작성자 → 제목 → 소개 → 메타 → 참여 -->
+            <div class="recipe-detail-header__author">
+                <div class="recipe-detail-header__author-left">
+                    <button type="button" class="recipe-detail-header__avatar" @click="$emit('go-to-author-profile')" aria-label="작성자 프로필">
+                        <img v-if="recipe.memberProfileImage" :src="resolveProfileImage(recipe.memberProfileImage)" alt="" class="w-full h-full object-cover" />
+                        <i v-else class="pi pi-user text-gray-500"></i>
+                    </button>
+                    <button type="button" class="recipe-detail-header__author-name" @click="$emit('go-to-author-profile')">
+                        {{ recipe.memberNickname || recipe.memberName }}
+                    </button>
                 </div>
                 <div v-if="!isRecipeAuthor" class="shrink-0">
                     <Button
@@ -144,68 +106,269 @@ defineEmits<{
                     />
                 </div>
             </div>
+
+            <h1 class="recipe-detail-header__title">{{ recipe.title }}</h1>
+
+            <p v-if="recipe.introduction" class="recipe-detail-header__intro">{{ recipe.introduction }}</p>
+
+            <div v-if="metaParts.length || categoryLabels.length" class="recipe-detail-header__meta">
+                <span v-if="metaParts.length" class="recipe-detail-header__meta-tips">
+                    <template v-for="(part, i) in metaParts" :key="`meta-${i}`">
+                        <span v-if="i > 0" class="recipe-detail-header__meta-sep" aria-hidden="true">·</span>
+                        <span>{{ part }}</span>
+                    </template>
+                </span>
+                <span v-if="metaParts.length && categoryLabels.length" class="recipe-detail-header__meta-sep" aria-hidden="true">·</span>
+                <span v-if="categoryLabels.length" class="recipe-detail-header__meta-tags">
+                    <Tag v-for="label in categoryLabels" :key="label" :value="label" severity="secondary" class="recipe-detail-header__tag" />
+                </span>
+            </div>
+
+            <div class="recipe-detail-header__stats">
+                <span>조회 {{ formatNumber(recipe.hits) }}</span>
+                <span class="recipe-detail-header__meta-sep" aria-hidden="true">·</span>
+                <span>댓글 {{ formatNumber(recipe.stats?.totalComments) }}</span>
+                <span class="recipe-detail-header__meta-sep" aria-hidden="true">·</span>
+                <span>찜 {{ formatNumber(recipe.stats?.favoriteCount) }}</span>
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-.recipe-intro-bubble {
+.recipe-detail-header {
+    background: #fff;
+    border: 1px solid #f3e8d8;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(28, 25, 23, 0.06);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+@media (min-width: 768px) {
+    .recipe-detail-header {
+        border-radius: 1rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+.recipe-detail-header__image {
     position: relative;
-    max-width: 100%;
-    margin-bottom: 1rem;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-    border-radius: 20px;
-    border: 2px solid #fcd34d;
-    box-shadow: 0 2px 8px rgba(252, 211, 77, 0.2);
+    width: 100%;
+    height: 13rem;
+    background: #fff7ed;
 }
 
-.recipe-intro-bubble::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 1.5rem;
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid #fcd34d;
+@media (min-width: 481px) {
+    .recipe-detail-header__image {
+        height: 16rem;
+    }
 }
 
-.recipe-intro-bubble::after {
-    content: '';
-    position: absolute;
-    top: -5px;
-    left: 1.6rem;
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 8px solid #fffbeb;
+@media (min-width: 769px) {
+    .recipe-detail-header__image {
+        height: 22rem;
+    }
 }
 
-.recipe-intro-bubble__text {
+.recipe-detail-header__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.recipe-detail-header__img-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #fdba74;
+    font-size: 3rem;
+}
+
+.recipe-detail-header__body {
+    padding: 1rem 1rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__body {
+        padding: 1.25rem 1.5rem 1.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .recipe-detail-header__body {
+        padding: 1.5rem 2rem 1.75rem;
+    }
+}
+
+.recipe-detail-header__author {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.875rem;
+    min-width: 0;
+}
+
+.recipe-detail-header__author-left {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.recipe-detail-header__avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.recipe-detail-header__avatar:hover {
+    opacity: 0.85;
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__avatar {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}
+
+.recipe-detail-header__author-name {
+    border: none;
+    background: none;
+    padding: 0;
     margin: 0;
-    font-size: 1.125rem;
-    line-height: 1.65;
-    color: #92400e;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
-/* 제목: 요리 앱에서 흔히 쓰는 딥 블루 톤 (가독성) */
+.recipe-detail-header__author-name:hover {
+    color: var(--primary-color, #f97316);
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__author-name {
+        font-size: 1rem;
+    }
+}
+
 .recipe-detail-header__title {
-    color: #1e3a5f;
-    line-height: 1.25;
+    margin: 0 0 0.75rem;
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #111827;
     word-break: keep-all;
-    font-size: 2.25rem;
 }
 
-@media (max-width: 1024px) {
+@media (min-width: 640px) {
+    .recipe-detail-header__title {
+        font-size: 1.625rem;
+    }
+}
+
+@media (min-width: 768px) {
     .recipe-detail-header__title {
         font-size: 1.875rem;
     }
 }
 
-/* 히어로 플로팅 버튼 — 노치·라운드 코너 대응 */
+.recipe-detail-header__intro {
+    margin: 0 0 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: #4b5563;
+    white-space: pre-line;
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__intro {
+        font-size: 1rem;
+    }
+}
+
+.recipe-detail-header__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem 0.25rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__meta {
+        font-size: 0.875rem;
+    }
+}
+
+.recipe-detail-header__meta-tips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.recipe-detail-header__meta-sep {
+    color: #d1d5db;
+    margin: 0 0.125rem;
+}
+
+.recipe-detail-header__meta-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+}
+
+.recipe-detail-header__tag {
+    font-size: 0.75rem !important;
+}
+
+.recipe-detail-header__stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.125rem;
+    font-size: 0.8125rem;
+    color: #9ca3af;
+}
+
+@media (min-width: 640px) {
+    .recipe-detail-header__stats {
+        font-size: 0.875rem;
+    }
+}
+
+/* FAB */
+.recipe-detail-header__fab {
+    position: absolute;
+    z-index: 10;
+}
+
 .recipe-detail-header__fab--back {
     top: calc(0.75rem + env(safe-area-inset-top, 0px));
     left: calc(0.75rem + env(safe-area-inset-left, 0px));
@@ -214,6 +377,8 @@ defineEmits<{
 .recipe-detail-header__fab--actions {
     top: calc(0.75rem + env(safe-area-inset-top, 0px));
     right: calc(0.75rem + env(safe-area-inset-right, 0px));
+    display: flex;
+    gap: 0.5rem;
 }
 
 @media (min-width: 769px) {
@@ -228,7 +393,6 @@ defineEmits<{
     }
 }
 
-/* 터치 최소 영역 확보 (모바일). class는 루트 .p-button에 합쳐지므로 자손 선택자 금지 */
 :deep(.recipe-hero-btn.p-button) {
     width: max(2.75rem, 44px);
     height: max(2.75rem, 44px);
@@ -247,7 +411,6 @@ defineEmits<{
     filter: brightness(0.95);
 }
 
-/* 찜·북마크: 비선택 시 흰 배경 + 주황 아이콘(브랜드 primary) */
 :deep(.recipe-hero-btn.recipe-hero-btn--like.p-button),
 :deep(.recipe-hero-btn.recipe-hero-btn--bookmark.p-button) {
     background: #fff !important;
@@ -260,7 +423,6 @@ defineEmits<{
     color: inherit;
 }
 
-/* 선택됨: 원형 배경만 주황, 아이콘은 fill 글리프 + 흰색으로 테두리·내부까지 동일 톤 */
 :deep(.recipe-hero-btn.recipe-hero-btn--like.p-button.recipe-hero-btn--liked),
 :deep(.recipe-hero-btn.recipe-hero-btn--bookmark.p-button.recipe-hero-btn--bookmarked) {
     background: var(--primary-color, #f97316) !important;
@@ -277,28 +439,6 @@ defineEmits<{
 :deep(.recipe-hero-btn.recipe-hero-btn--like.p-button.recipe-hero-btn--liked:hover),
 :deep(.recipe-hero-btn.recipe-hero-btn--bookmark.p-button.recipe-hero-btn--bookmarked:hover) {
     filter: brightness(0.95);
-}
-
-.recipe-detail-header__stat-value {
-    font-size: clamp(1.125rem, 4vw, 1.5rem);
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.recipe-detail-header__stat-label {
-    font-size: 0.7rem;
-    margin-top: 0.125rem;
-    color: #6b7280;
-}
-
-@media (min-width: 640px) {
-    .recipe-detail-header__stat-label {
-        font-size: 0.875rem;
-    }
-}
-
-.recipe-detail-header__stat-cell + .recipe-detail-header__stat-cell {
-    border-left: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .recipe-detail-header__follow-btn :deep(.p-button) {
@@ -321,123 +461,6 @@ defineEmits<{
 
     .recipe-detail-header__follow-btn :deep(.p-button .p-button-icon) {
         font-size: 0.875rem;
-    }
-}
-
-/* 요리 팁이 없을 때: 통계만 회색 카드 안에 균형 있게 배치 */
-.recipe-detail-header__tips--stats-only {
-    justify-content: center;
-}
-
-.recipe-detail-header__tips--stats-only .recipe-detail-header__stats {
-    width: 100%;
-    justify-content: space-around;
-}
-
-.recipe-detail-header__tips-meta {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.recipe-detail-header__tip-icon {
-    font-size: 0.8125rem;
-}
-
-.recipe-detail-header__tip-text {
-    font-size: 0.6875rem;
-    line-height: 1.2;
-}
-
-@media (min-width: 400px) {
-    .recipe-detail-header__tip-icon {
-        font-size: 0.875rem;
-    }
-
-    .recipe-detail-header__tip-text {
-        font-size: 0.75rem;
-    }
-}
-
-@media (min-width: 640px) {
-    .recipe-detail-header__tip-icon {
-        font-size: 1rem;
-    }
-
-    .recipe-detail-header__tip-text {
-        font-size: 0.875rem;
-    }
-}
-
-@media (min-width: 768px) {
-    .recipe-detail-header__tip-icon {
-        font-size: 1.125rem;
-    }
-
-    .recipe-detail-header__tip-text {
-        font-size: 1rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    .recipe-detail-header__tip-icon {
-        font-size: 1.25rem;
-    }
-
-    .recipe-detail-header__tip-text {
-        font-size: 1.125rem;
-    }
-}
-
-.recipe-detail-header__tip-item {
-    flex: 1 1 0;
-    min-width: 0;
-}
-
-@media (min-width: 768px) {
-    .recipe-detail-header__tip-item {
-        flex: 0 1 auto;
-    }
-}
-/* 반응형: 태블릿 */
-@media (max-width: 768px) {
-    .recipe-detail-header__image {
-        height: 16rem;
-    }
-    .recipe-detail-header__title {
-        font-size: 1.5rem;
-    }
-    .recipe-detail-header__main {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-    .recipe-detail-header__tips {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-    }
-    .recipe-detail-header__stats {
-        width: 100%;
-        justify-content: space-between;
-    }
-    .recipe-detail-header__stats--below-tips {
-        padding-top: 0.75rem;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
-    }
-}
-
-/* 반응형: 모바일 */
-@media (max-width: 480px) {
-    .recipe-detail-header__image {
-        height: 13rem;
-    }
-    .recipe-detail-header__title {
-        font-size: 1.25rem;
-    }
-    .recipe-intro-bubble {
-        padding: 0.75rem 1rem;
-    }
-    .recipe-intro-bubble__text {
-        font-size: 0.95rem;
     }
 }
 </style>

@@ -2,14 +2,12 @@
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
 import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import IngredientList from '@/components/ingredient/IngredientList.vue';
-import type { ComponentPublicInstance } from 'vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -17,10 +15,8 @@ const router = useRouter();
 const activeTab = ref<'storage' | 'preparation'>('storage');
 const selectedGroupId = ref<number | null>(null);
 const searchQuery = ref('');
-const storageListRef = ref<ComponentPublicInstance | null>(null);
-const preparationListRef = ref<ComponentPublicInstance | null>(null);
 
-/** 768px 이하에서만 검색/요청 UI 간소화 (데스크톱은 기존과 동일) */
+/** 768px 이하에서만 검색 UI 간소화 (데스크톱은 기존과 동일) */
 const isNarrowTopBar = ref(typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
 
 let narrowTopBarMql: MediaQueryList | null = null;
@@ -79,11 +75,6 @@ const updateQuery = () => {
     router.replace({ query });
 };
 
-const openRequestDialog = () => {
-    const listRef = activeTab.value === 'storage' ? storageListRef.value : preparationListRef.value;
-    (listRef as { openRequestDialog?: () => void })?.openRequestDialog?.();
-};
-
 // URL 쿼리 변경 감지
 watch(
     () => route.query,
@@ -117,16 +108,11 @@ onUnmounted(() => {
 <template>
     <div class="page-container page-container--card ingredient-management" :class="{ 'page-container--wide': isNarrowTopBar }">
         <div class="ingredient-panel">
-            <!-- 검색 + 요청: 모바일(≤768px)만 간소화, 데스크톱은 기존 전체 라벨·긴 placeholder -->
+            <!-- 검색: 모바일(≤768px)만 간소화, 데스크톱은 기존 긴 placeholder -->
             <div class="top-row">
                 <span class="p-input-icon-left search-bar">
                     <InputText v-model="searchQuery" :placeholder="searchPlaceholder" class="w-full" @input="updateQuery()" />
                 </span>
-                <div class="top-row__spacer" aria-hidden="true"></div>
-                <button v-if="isNarrowTopBar" type="button" class="request-btn-native" v-tooltip.top="'재료 정보 요청하기'" aria-label="재료 정보 요청하기" @click="openRequestDialog">
-                    <i class="pi pi-send" aria-hidden="true"></i>
-                </button>
-                <Button v-else label="재료 정보 요청하기" icon="pi pi-send" class="request-btn request-btn--labeled" size="small" raised @click="openRequestDialog" />
             </div>
 
             <!-- 검색 영역 하단 구분선 (Category.vue .category-tabs-panel과 동일) -->
@@ -138,10 +124,10 @@ onUnmounted(() => {
                     </TabList>
                     <TabPanels>
                         <TabPanel value="storage">
-                            <IngredientList ref="storageListRef" type="storage" :selected-group-id="selectedGroupId" :search-query="searchQuery" @group-selected="handleGroupSelected" />
+                            <IngredientList type="storage" :selected-group-id="selectedGroupId" :search-query="searchQuery" @group-selected="handleGroupSelected" />
                         </TabPanel>
                         <TabPanel value="preparation">
-                            <IngredientList ref="preparationListRef" type="preparation" :selected-group-id="selectedGroupId" :search-query="searchQuery" @group-selected="handleGroupSelected" />
+                            <IngredientList type="preparation" :selected-group-id="selectedGroupId" :search-query="searchQuery" @group-selected="handleGroupSelected" />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
@@ -158,7 +144,7 @@ onUnmounted(() => {
     }
 }
 
-/* 배경 단순화: 페이지 배경(오렌지) → 하나의 흰 카드. 테두리는 Category.vue .category-selector와 동일 */
+/* 배경 단순화: 페이지 배경(오렌지) → 하나의 흰색 카드. 테두리는 Category.vue .category-selector와 동일 */
 .ingredient-panel {
     background: var(--surface-card);
     border: 1px solid #fed7aa;
@@ -178,7 +164,6 @@ onUnmounted(() => {
     }
 }
 
-/* 검색 행: 데스크톱에서 스페이서로 요청 버튼을 카드 우측 끝까지 밀기 (줄바꿈 익명 플렉스 아이템 이슈 회피) */
 .top-row {
     display: flex;
     width: 100%;
@@ -189,18 +174,6 @@ onUnmounted(() => {
     background: #fff7ed;
     border-bottom: 1px solid #fed7aa;
     flex-shrink: 0;
-}
-
-.top-row__spacer {
-    display: none;
-}
-
-@media (min-width: 769px) {
-    .top-row__spacer {
-        display: block;
-        flex: 1 1 auto;
-        min-width: 0;
-    }
 }
 
 /* 검색창 너비: 데스크톱은 Category.vue .category-search-input 과 동일(최대 400px) */
@@ -225,47 +198,6 @@ onUnmounted(() => {
         padding: 0.5rem 0.75rem;
         min-height: 2.5rem;
     }
-}
-
-/* 데스크톱: 전체 라벨 버튼 (스페이서가 우측 정렬 담당) */
-.request-btn--labeled {
-    flex-shrink: 0;
-}
-
-/* 모바일: PrimeVue Button 라벨 없이 아이콘만 (네이티브 버튼) */
-.request-btn-native {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    color: #fff;
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    box-shadow:
-        0 1px 2px rgba(0, 0, 0, 0.06),
-        0 1px 4px rgba(234, 88, 12, 0.28);
-    transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease;
-}
-
-.request-btn-native:focus-visible {
-    outline: 2px solid #ea580c;
-    outline-offset: 2px;
-}
-
-.request-btn-native:active {
-    transform: scale(0.96);
-}
-
-.request-btn-native .pi {
-    font-size: 0.95rem;
 }
 
 /* 탭/리스트 영역: 같은 카드 안에 이어지도록 테두리만 구분 (별도 흰 박스 제거) */

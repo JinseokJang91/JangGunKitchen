@@ -1,7 +1,7 @@
 # 컴포넌트 목록
 
 **정의**: 각 화면에 컴포넌트로 포함되어 기능을 담당하는 파일 목록  
-**기준**: `frontend/src/components/` 및 View에서의 import 분석 (2026-04-17)
+**기준**: `frontend/src/components/` 및 View에서의 import 분석 (2026-09-01)
 
 ---
 
@@ -33,13 +33,12 @@
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
 | 10 | RecipeGridCard | components/recipe/RecipeGridCard.vue | SearchResult, Category, MemberProfile, Favorites, OpenBookView | 그리드용 레시피 카드(썸네일·제목·통계 등) |
-| 11 | RecipeCard | components/recipe/RecipeCard.vue | FollowingFeed, CategorySection | 리스트/피드용 레시피 카드 |
-| 12 | RecipeListItem | components/recipe/RecipeListItem.vue | PopularRecipes, Ranking | 순위·리스트 형태 레시피 한 행 |
-| 13 | RecipeDetailHeader | components/recipe/RecipeDetailHeader.vue | RecipeDetail | 레시피 상세 상단(제목·작성자·북마크·통계 등) |
-| 14 | RecipeDetailGallery | components/recipe/RecipeDetailGallery.vue | RecipeDetail | 레시피 상세 이미지 갤러리 |
-| 15 | RecipeDetailIngredients | components/recipe/RecipeDetailIngredients.vue | RecipeDetail | 레시피 재료 목록 표시 |
-| 16 | RecipeDetailSteps | components/recipe/RecipeDetailSteps.vue | RecipeDetail | 레시피 조리 순서 표시 |
-| 17 | RecipeComments | components/recipe/RecipeComments.vue | RecipeDetail | 레시피 댓글 목록·작성 |
+| 11 | RecipeCard | components/recipe/RecipeCard.vue | FollowingFeed | 리스트/피드용 레시피 카드 |
+| 12 | RecipeDetailHeader | components/recipe/RecipeDetailHeader.vue | RecipeDetail | 레시피 상세 상단(제목·작성자·북마크·통계 등) |
+| 13 | RecipeDetailGallery | components/recipe/RecipeDetailGallery.vue | RecipeDetail | 레시피 상세 이미지 갤러리 |
+| 14 | RecipeDetailIngredients | components/recipe/RecipeDetailIngredients.vue | RecipeDetail | 레시피 재료 목록 표시 |
+| 15 | RecipeDetailSteps | components/recipe/RecipeDetailSteps.vue | RecipeDetail | 레시피 조리 순서 표시 |
+| 16 | RecipeComments | components/recipe/RecipeComments.vue | RecipeDetail | 레시피 댓글 목록·작성 |
 
 ---
 
@@ -47,10 +46,10 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 18 | RecipeFormBasicInfo | components/recipe/form/RecipeFormBasicInfo.vue | RecipeCreate, RecipeEdit | 레시피 기본 정보(제목·설명·썸네일 등) 입력 |
-| 19 | RecipeFormClassification | components/recipe/form/RecipeFormClassification.vue | RecipeCreate, RecipeEdit | 레시피 분류(카테고리 등) 입력 |
-| 20 | RecipeFormIngredients | components/recipe/form/RecipeFormIngredients.vue | RecipeCreate, RecipeEdit | 레시피 재료 입력 |
-| 21 | RecipeFormSteps | components/recipe/form/RecipeFormSteps.vue | RecipeCreate, RecipeEdit | 레시피 조리 순서 입력 |
+| 17 | RecipeFormBasicInfo | components/recipe/form/RecipeFormBasicInfo.vue | RecipeCreate, RecipeEdit | 레시피 기본 정보(제목·설명·썸네일 등) 입력 |
+| 18 | RecipeFormClassification | components/recipe/form/RecipeFormClassification.vue | RecipeCreate, RecipeEdit | 레시피 분류(카테고리 등) 입력 |
+| 19 | RecipeFormIngredients | components/recipe/form/RecipeFormIngredients.vue | RecipeCreate, RecipeEdit | 레시피 재료 입력 |
+| 20 | RecipeFormSteps | components/recipe/form/RecipeFormSteps.vue | RecipeCreate, RecipeEdit | 레시피 조리 순서 입력 |
 
 ---
 
@@ -58,13 +57,10 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 22 | PopularRecipes | components/dashboard/PopularRecipes.vue | Dashboard | 인기 레시피 섹션 |
-| 23 | ThemeCollections | components/dashboard/ThemeCollections.vue | Dashboard | 테마 컬렉션 섹션 |
-| 24 | CategorySections | components/dashboard/CategorySections.vue | Dashboard | 트렌딩 카테고리별 섹션 묶음 |
-| 25 | CategorySection | components/dashboard/CategorySection.vue | CategorySections | 카테고리 하나당 레시피 목록(RecipeCard 사용) |
-| 26 | RecentViews | components/dashboard/RecentViews.vue | Dashboard | 최근 본 레시피 섹션 |
-| 27 | TodayRecommendations | components/dashboard/TodayRecommendations.vue | Dashboard | 오늘의 추천 레시피 섹션 |
-| 28 | RecommendedCreators | components/dashboard/RecommendedCreators.vue | Dashboard | 추천 크리에이터 섹션 |
+| 21 | PopularRecipes | components/dashboard/PopularRecipes.vue | Dashboard | 인기 레시피 섹션(TOP 3, 마크업 인라인) |
+| 22 | RecentViews | components/dashboard/RecentViews.vue | Dashboard | 최근 본 레시피 섹션 |
+| 23 | TodayRecommendations | components/dashboard/TodayRecommendations.vue | Dashboard | 오늘의 추천 레시피 섹션 |
+| 24 | RecommendedCreators | components/dashboard/RecommendedCreators.vue | Dashboard | 추천 크리에이터 섹션 |
 
 ---
 
@@ -72,7 +68,7 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 29 | FollowListDialog | components/follow/FollowListDialog.vue | MemberProfile, Profile | 팔로워/팔로잉 목록 다이얼로그 |
+| 25 | FollowListDialog | components/follow/FollowListDialog.vue | MemberProfile, Profile | 팔로워/팔로잉 목록 다이얼로그 |
 
 ---
 
@@ -80,8 +76,8 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 30 | InquiryFormDialog | components/inquiry/InquiryFormDialog.vue | Inquiries, InquiryDetailDialog | 1:1 문의 작성/수정 다이얼로그 |
-| 31 | InquiryDetailDialog | components/inquiry/InquiryDetailDialog.vue | Inquiries | 1:1 문의 상세 조회·답변 확인·수정/삭제 다이얼로그 |
+| 26 | InquiryFormDialog | components/inquiry/InquiryFormDialog.vue | Inquiries, InquiryDetailDialog | 1:1 문의 작성/수정 다이얼로그 |
+| 27 | InquiryDetailDialog | components/inquiry/InquiryDetailDialog.vue | Inquiries | 1:1 문의 상세 조회·답변 확인·수정/삭제 다이얼로그 |
 
 ---
 
@@ -89,10 +85,10 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 32 | IngredientList | components/ingredient/IngredientList.vue | IngredientManagement | 재료 그룹·재료 목록 표시 및 그룹 선택 |
-| 33 | IngredientGroupSelector | components/ingredient/IngredientGroupSelector.vue | IngredientList | 재료 그룹 선택 UI |
-| 34 | IngredientGrid | components/ingredient/IngredientGrid.vue | IngredientList | 재료 카드 그리드 배치 |
-| 35 | IngredientCard | components/ingredient/IngredientCard.vue | IngredientGrid | 재료 한 건 카드 표시 |
+| 28 | IngredientList | components/ingredient/IngredientList.vue | IngredientManagement | 재료 그룹·재료 목록 표시 및 그룹 선택 |
+| 29 | IngredientGroupSelector | components/ingredient/IngredientGroupSelector.vue | IngredientList | 재료 그룹 선택 UI |
+| 30 | IngredientGrid | components/ingredient/IngredientGrid.vue | IngredientList | 재료 카드 그리드 배치 |
+| 31 | IngredientCard | components/ingredient/IngredientCard.vue | IngredientGrid | 재료 한 건 카드 표시 |
 
 ---
 
@@ -100,8 +96,8 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 36 | ToastUiEditor | components/editor/ToastUiEditor.vue | IngredientManagementRegister | Toast UI 기반 리치 에디터(저장법·손질법 등 입력) |
-| 37 | ToastUiViewer | components/editor/ToastUiViewer.vue | IngredientDetail | Toast UI 기반 본문 뷰어(저장법·손질법 등 표시) |
+| 32 | ToastUiEditor | components/editor/ToastUiEditor.vue | IngredientManagementRegister | Toast UI 기반 리치 에디터(저장법·손질법 등 입력) |
+| 33 | ToastUiViewer | components/editor/ToastUiViewer.vue | IngredientDetail | Toast UI 기반 본문 뷰어(저장법·손질법 등 표시) |
 
 ---
 
@@ -109,12 +105,23 @@
 
 | No | 컴포넌트(파일) | 경로 | 사용 화면 | 설명·역할 |
 |----|----------------|------|-----------|-----------|
-| 38 | SocialLoginButtons | components/SocialLoginButtons.vue | Login | 소셜 로그인(네이버·구글·카카오) 버튼 |
-| 39 | FAQ | components/community/FAQ.vue | CustomerSupport | 자주 묻는 질문 목록 표시 컴포넌트 |
+| 34 | SocialLoginButtons | components/SocialLoginButtons.vue | Login | 소셜 로그인(네이버·구글·카카오) 버튼 |
+| 35 | FAQ | components/community/FAQ.vue | CustomerSupport | 자주 묻는 질문 목록 표시 컴포넌트 |
+
+---
+
+## 부록. 삭제된 컴포넌트 (2026-08-29)
+
+| 컴포넌트 | 비고 |
+|----------|------|
+| ThemeCollections | 테마 컬렉션 대시보드 섹션 |
+| CategorySections / CategorySection | 트렌딩 카테고리 대시보드 섹션 |
+| RecipeListItem | 인기 TOP 카드 마크업을 `PopularRecipes.vue`에 인라인 흡수 |
 
 ---
 
 ## 비고
 
-- **사용 화면**: 해당 컴포넌트를 직접 import하여 사용하는 View 또는 상위 컴포넌트 이름. 다른 컴포넌트를 통해서만 사용되는 경우 상위 컴포넌트명으로 표기(예: BookPage → BookFrame 사용처인 OpenBookView 기준으로는 Bookmarks).
+- **사용 화면**: 해당 컴포넌트를 직접 import하여 사용하는 View 또는 상위 컴포넌트 이름. 다른 컴포넌트를 통해서만 사용되는 경우 상위 컴포넌트명으로 표기(예: BookPage → BookFrame 사용처인 OpenBookView 기준으로는 Bookmarks)
 - AppLayout, App.vue 는 화면이 아닌 레이아웃·루트이므로 "사용 화면"에만 표기함.
+- 레시피 작성/수정(`RecipeCreate`/`RecipeEdit`)은 form 컴포넌트 조합이며 Toast UI 에디터는 재료 관리 화면에만 사용

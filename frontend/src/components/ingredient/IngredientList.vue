@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
-import Dialog from 'primevue/dialog';
-import Select from 'primevue/select';
-import Textarea from 'primevue/textarea';
-import ProgressSpinner from 'primevue/progressspinner';
-import { useToast } from 'primevue/usetoast';
-import { getIngredientGroups, getIngredients, createIngredientRequest } from '@/api/ingredientApi';
+import Skeleton from 'primevue/skeleton';
+import { getIngredientGroups, getIngredients } from '@/api/ingredientApi';
 import type { IngredientGroup, Ingredient, IngredientType } from '@/types/ingredient';
 import IngredientGroupSelector from './IngredientGroupSelector.vue';
 import IngredientGrid from './IngredientGrid.vue';
@@ -25,27 +20,16 @@ const emit = defineEmits<{
     (e: 'group-selected', groupId: number | null): void;
 }>();
 
+/** 로딩 스켈레톤 카드 수 (한 화면 그리드 분량) */
+const SKELETON_CARD_COUNT = 12;
+
 const groups = ref<IngredientGroup[]>([]);
 const ingredients = ref<Ingredient[]>([]);
-const loading = ref(false);
+// 진입 직후 스피너/빈 화면 깜빡임을 막기 위해 초기값을 true로 둔다
+const loading = ref(true);
 const error = ref<string | null>(null);
 const localSearchQuery = ref(props.searchQuery || '');
 const selectedGroupId = ref<number | null>(props.selectedGroupId || null);
-const showRequestDialog = ref(false);
-const requestLoading = ref(false);
-
-const requestForm = ref({
-    ingredientName: '',
-    requestType: 'STORAGE' as 'STORAGE' | 'PREPARATION',
-    message: ''
-});
-
-const requestTypes = [
-    { label: '보관법', value: 'STORAGE' },
-    { label: '손질법', value: 'PREPARATION' }
-];
-
-const toast = useToast();
 
 const handleGroupSelect = (groupId: number | null) => {
     selectedGroupId.value = groupId;
@@ -59,79 +43,6 @@ const handleIngredientClick = (ingredient: Ingredient) => {
         params: { id: ingredient.id },
         query: { type: props.type }
     });
-};
-
-const openRequestDialog = () => {
-    requestForm.value = {
-        ingredientName: '',
-        requestType: props.type === 'storage' ? 'STORAGE' : 'PREPARATION',
-        message: ''
-    };
-    showRequestDialog.value = true;
-};
-
-const handleRequestSubmit = async () => {
-    const trimmedName = requestForm.value.ingredientName.trim();
-    if (!trimmedName) {
-        toast.add({
-            severity: 'warn',
-            summary: '알림',
-            detail: '재료명을 입력해주세요.',
-            life: 3000
-        });
-        return;
-    }
-
-    requestLoading.value = true;
-
-    try {
-        // 이미 존재하는 재료인지 확인 (이름 일치 시 요청 불가)
-        const { ingredients: existingList } = await getIngredients({
-            searchQuery: trimmedName,
-            limit: 100
-        });
-        const nameLower = trimmedName.toLowerCase();
-        const alreadyExists = existingList.some((ing) => ing.name.trim().toLowerCase() === nameLower);
-        if (alreadyExists) {
-            toast.add({
-                severity: 'warn',
-                summary: '요청 불가',
-                detail: nameLower + '는 이미 등록되어 있어요! 😄',
-                life: 4000
-            });
-            return;
-        }
-
-        await createIngredientRequest({
-            ingredientName: trimmedName,
-            requestType: requestForm.value.requestType,
-            message: requestForm.value.message?.trim() || undefined
-        });
-
-        toast.add({
-            severity: 'success',
-            summary: '요청 완료',
-            detail: '재료 정보 요청이 접수되었습니다.',
-            life: 3000
-        });
-
-        showRequestDialog.value = false;
-        requestForm.value = {
-            ingredientName: '',
-            requestType: props.type === 'storage' ? 'STORAGE' : 'PREPARATION',
-            message: ''
-        };
-    } catch (err: unknown) {
-        console.error('요청 생성 실패:', err);
-        toast.add({
-            severity: 'error',
-            summary: '오류',
-            detail: err instanceof Error ? err.message : '요청 생성에 실패했습니다.',
-            life: 3000
-        });
-    } finally {
-        requestLoading.value = false;
-    }
 };
 
 const loadGroups = async () => {
@@ -198,10 +109,6 @@ onMounted(() => {
     loadGroups();
     loadIngredients();
 });
-
-defineExpose({
-    openRequestDialog
-});
 </script>
 
 <template>
@@ -212,10 +119,14 @@ defineExpose({
         <!-- 그룹 선택 ↔ 재료 목록 구분 -->
         <div class="list-section-divider" aria-hidden="true"></div>
 
-        <!-- 로딩 상태 -->
-        <div v-if="loading" class="list-state list-state--loading text-center py-8">
-            <ProgressSpinner />
-            <p class="list-state__hint">재료를 불러오는 중...</p>
+        <!-- 로딩: 실제 그리드와 같은 레이아웃으로 높이 예약 -->
+        <div v-if="loading" class="ingredient-skeleton-grid" aria-busy="true" aria-label="재료 불러오는 중">
+            <div v-for="i in SKELETON_CARD_COUNT" :key="`ingredient-skeleton-${i}`" class="ingredient-skeleton-card">
+                <div class="ingredient-skeleton-card__image-wrap">
+                    <Skeleton shape="circle" width="100%" height="100%" />
+                </div>
+                <Skeleton width="70%" height="0.875rem" border-radius="6px" />
+            </div>
         </div>
 
         <!-- 에러 상태 -->
@@ -237,31 +148,6 @@ defineExpose({
             <h3 class="list-state__title list-state__title--sub">재료가 없습니다</h3>
             <p class="list-state__hint list-state__hint--muted">검색 조건을 변경해보세요.</p>
         </div>
-
-        <!-- 재료 정보 요청 다이얼로그 -->
-        <Dialog v-model:visible="showRequestDialog" header="재료 정보 요청" class="ingredient-request-dialog" :modal="true" :style="{ width: '90vw', maxWidth: '500px' }">
-            <div class="request-form">
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">재료명</label>
-                    <InputText v-model="requestForm.ingredientName" class="w-full" placeholder="요청할 재료명을 입력하세요" />
-                </div>
-
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">요청 유형</label>
-                    <Select v-model="requestForm.requestType" :options="requestTypes" optionLabel="label" optionValue="value" class="w-full" />
-                </div>
-
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">메시지 (선택사항)</label>
-                    <Textarea v-model="requestForm.message" rows="4" class="w-full" placeholder="요청 사항을 입력하세요..." />
-                </div>
-            </div>
-
-            <template #footer>
-                <Button label="취소" severity="secondary" outlined @click="showRequestDialog = false" />
-                <Button label="요청하기" @click="handleRequestSubmit" :loading="requestLoading" />
-            </template>
-        </Dialog>
     </div>
 </template>
 
@@ -286,6 +172,73 @@ defineExpose({
 @media (max-width: 768px) {
     .list-section-divider {
         margin: 1rem 0 0.875rem;
+    }
+}
+
+/* IngredientGrid와 동일한 열 구성 */
+.ingredient-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.ingredient-skeleton-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    border: 1px solid rgba(180, 150, 110, 0.2);
+    border-radius: 16px;
+    background: linear-gradient(165deg, #fefcf9 0%, #faf6f1 50%, #f5f0e8 100%);
+    box-sizing: border-box;
+}
+
+.ingredient-skeleton-card__image-wrap {
+    width: 100%;
+    aspect-ratio: 1;
+}
+
+.ingredient-skeleton-card__image-wrap :deep(.p-skeleton) {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+@media (max-width: 1024px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+        gap: 12px;
+    }
+
+    .ingredient-skeleton-card {
+        padding: 14px;
+        border-radius: 14px;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ingredient-skeleton-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .ingredient-skeleton-card {
+        padding: 12px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .ingredient-skeleton-grid {
+        gap: 8px;
     }
 }
 
@@ -333,7 +286,6 @@ defineExpose({
 }
 
 @media (max-width: 768px) {
-    .list-state--loading,
     .list-state--error,
     .list-state--empty {
         padding-top: 1.5rem;
@@ -356,16 +308,5 @@ defineExpose({
     .list-state__hint {
         font-size: 0.875rem;
     }
-}
-</style>
-
-<!-- Dialog는 body로 텔레포트되므로 비-scoped로 X 버튼만 타깃 -->
-<style>
-.ingredient-request-dialog .p-dialog-close-button,
-.ingredient-request-dialog .p-dialog-close-button:focus,
-.ingredient-request-dialog .p-dialog-close-button:focus-visible {
-    border: none;
-    outline: none;
-    box-shadow: none;
 }
 </style>

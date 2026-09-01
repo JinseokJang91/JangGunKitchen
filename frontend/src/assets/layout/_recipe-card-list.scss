@@ -84,31 +84,21 @@
 }
 
 .recipe-card-wrapper:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
 }
 
-/* 카드 열이 극히 좁을 때(모바일 2열 ≈ 150~190px): 텍스트 압축, 댓글 숨김, 이미지는 미디어쿼리에 위임 */
+/* §3.4: 좁은 카드 — 카테고리 숨김, 조회·댓글 축약(151 · 3), 액션 유지 */
 @container recipe-card (max-width: 200px) {
     :scope .recipe-card .p-card-header {
-        padding: 6px 6px 4px;
+        padding: 5px 5px 3px;
     }
 
     :scope .recipe-card .p-card-body {
-        padding: 0 6px 8px;
-    }
-
-    :scope .recipe-overlay {
-        padding: 0.45rem;
-    }
-
-    :scope .recipe-hits-overlay {
-        font-size: 0.62rem;
-        padding: 0.22rem 0.45rem;
-        border-radius: 8px 0 0 0;
+        padding: 0 5px 6px;
     }
 
     :scope .recipe-content {
-        padding: 0.35rem 0.45rem 0.45rem;
+        padding: 0.3rem 0.4rem 0.4rem;
         height: auto;
         min-height: 0;
         max-height: none;
@@ -122,42 +112,39 @@
     }
 
     :scope .recipe-title-zone {
-        min-height: 0;
-        margin-bottom: 0.1rem;
+        min-height: calc(1.3em * 2);
     }
 
     :scope .recipe-title {
         font-size: 0.78rem;
-        margin: 0 0 0.2rem;
+        margin: 0;
         line-height: 1.3;
         -webkit-line-clamp: 2;
     }
 
-    :scope .recipe-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.1rem;
-    }
-
-    :scope .info-item {
+    :scope .recipe-meta-line {
         font-size: 0.68rem;
-        white-space: nowrap;
+        min-height: 1.05rem;
     }
 
-    :scope .info-item i {
+    :scope .recipe-meta-line__item--category {
+        display: none;
+    }
+
+    :scope .recipe-author__name {
+        font-size: 0.68rem;
+    }
+
+    :scope .recipe-engagement {
         font-size: 0.65rem;
     }
 
-    :scope .recipe-content .recipe-author span {
-        font-size: 0.68rem;
-    }
-
-    :scope .recipe-author-zone {
-        min-height: 0;
-    }
-
-    :scope .recipe-comment-zone {
+    :scope .recipe-engagement__label {
         display: none;
+    }
+
+    :scope .recipe-zone-2 {
+        min-height: 1.35rem;
     }
 
     :scope .recipe-date-footer__text {
@@ -167,10 +154,6 @@
 
     :scope .recipe-date-footer__icon {
         font-size: 0.65rem;
-    }
-
-    :scope .recipe-info-tag {
-        font-size: 0.68rem;
     }
 
     :scope .recipe-actions .p-button {
@@ -194,33 +177,33 @@
     }
 }
 
-/* 카드 전체 오렌지톤 (상단 진함 → 하단 연함, 이미지 강조). .p-card 기본 배경 덮어쓰기 */
+/* §3.3 D7: 보더·그림자 완화, 패딩 타이트 */
 .recipe-card.p-card,
 .recipe-card {
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: visible;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(253, 186, 116, 0.35);
+    transition: box-shadow 0.25s ease, transform 0.2s ease;
     display: flex;
     flex-direction: column;
     width: 100%;
     min-height: 0;
     flex: 1 1 auto;
-    background: linear-gradient(180deg, #fed7aa 0%, #ffedd5 50%, #fff7ed 100%) !important;
+    background: linear-gradient(180deg, #ffedd5 0%, #fff7ed 55%, #fffaf5 100%) !important;
 }
 
 .recipe-card:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-/* 전역 SCSS에서는 :deep() 미지원 → 일반 자손 선택자 사용 (flex로 설명 영역 동일 높이) */
 .recipe-card .p-card-header {
-    padding: 10px 10px 6px 10px;
+    padding: 8px 8px 5px 8px;
     flex-shrink: 0;
 }
 
 .recipe-card .p-card-body {
-    padding: 0 10px 10px 10px;
+    padding: 0 8px 8px 8px;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -235,99 +218,96 @@
     min-height: 0;
 }
 
+/* 2.1: 높이 약 16% 축소(320→268), contain + 웜 배경 */
 .recipe-image-container {
     position: relative;
     width: 100%;
-    height: 320px;
+    height: 268px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(253, 186, 116, 0.25);
+    background: #fff7ed;
 }
 
 .recipe-image {
     width: 100%;
     height: 100%;
-    min-width: 100%;
-    min-height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
-    transition: transform 0.3s ease;
     display: block;
 }
 
-.recipe-card:hover .recipe-image {
-    transform: scale(1.05);
-}
-
-.recipe-overlay {
+/* 2.3: 우상단 상시 액션 (세로 스택, 반투명 원) */
+.recipe-actions {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 1rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.recipe-card:hover .recipe-overlay {
-    opacity: 1;
-}
-
-.recipe-actions {
-    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    justify-content: flex-end;
+    gap: 0.35rem;
 }
 
-.recipe-category-tag {
-    align-self: flex-start;
+.recipe-actions .recipe-action-btn.p-button,
+.recipe-actions .p-button.recipe-action-btn {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.92) !important;
+    border: 1px solid rgba(253, 186, 116, 0.55) !important;
+    color: #9a3412 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.recipe-hits-overlay {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    padding: 0.5rem 1rem;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    font-size: 0.85rem;
-    border-radius: 12px 0 0 0;
-    z-index: 1;
+.recipe-actions .recipe-action-btn.p-button:hover,
+.recipe-actions .p-button.recipe-action-btn:hover {
+    background: #fff !important;
+    border-color: #fb923c !important;
+    color: #c2410c !important;
 }
 
-.recipe-comment-count {
-    text-align: left;
+.recipe-actions .recipe-action-btn--favorite.p-button,
+.recipe-actions .p-button.recipe-action-btn--favorite {
+    color: #ef4444 !important;
+    border-color: rgba(252, 165, 165, 0.9) !important;
 }
 
-.recipe-info-tag {
-    font-size: 0.85rem;
+.recipe-actions .recipe-action-btn--bookmarked.p-button,
+.recipe-actions .p-button.recipe-action-btn--bookmarked {
+    color: #ea580c !important;
+    border-color: rgba(253, 186, 116, 0.95) !important;
 }
 
-/* 설명 영역 - 말풍선 스타일 (꼬리 왼쪽), 고정 높이로 카드 크기 통일 */
+.recipe-actions .p-button .p-button-icon {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* 설명 영역 - 말풍선 스타일 (2단 압축에 맞춰 높이 축소) */
 .recipe-content {
     position: relative;
-    padding: 0.65rem 0.85rem 0.85rem;
+    padding: 0.65rem 0.85rem 0.75rem;
     background: var(--surface-ground, #fafafa);
     border-radius: 12px;
     border: 1px solid rgba(253, 186, 116, 0.4);
     border-top: 1px solid rgba(253, 186, 116, 0.5);
     box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.6) inset, 0 2px 8px rgba(0, 0, 0, 0.04);
     flex: 1 1 auto;
-    height: 180px;
-    min-height: 180px;
+    height: auto;
+    min-height: 7.5rem;
     display: flex;
     flex-direction: column;
-    /* overflow 제거: 말풍선 꼬리(::before)가 위로 나가므로 hidden 시 꼬리가 잘림 */
 }
 
 .recipe-content::before {
@@ -344,19 +324,26 @@
     filter: drop-shadow(0 -1px 0 rgba(253, 186, 116, 0.5));
 }
 
-/* 제목 영역: 2줄 고정 + 기존 하단 간격 0.5rem 유지 */
+/* 1단: 타이틀 + 보조 메타 */
+.recipe-zone-1 {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
 .recipe-title-zone {
     flex-shrink: 0;
-    min-height: calc(2.7em + 0.5rem); /* 2줄 + margin-bottom */
+    min-height: calc(1.35em * 2);
     display: flex;
     align-items: flex-start;
 }
 
 .recipe-title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: var(--text-color);
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -367,7 +354,6 @@
     width: 100%;
 }
 
-/* 검색 결과 하이라이트용 (SearchResult 등) */
 .recipe-title mark {
     background-color: #fef08a;
     padding: 0 2px;
@@ -379,71 +365,129 @@
     line-height: inherit;
 }
 
-.recipe-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    flex: 1;
-}
-
-/* 작성자/날짜 영역: 기존 mt-2(0.5rem) + 1줄 높이 고정 */
-.recipe-author-zone {
+.recipe-meta-line {
     flex-shrink: 0;
-    min-height: 2rem; /* 0.5rem + 1.5rem */
+    min-height: 1.25rem;
     display: flex;
-    align-items: flex-start;
-    overflow: hidden;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: var(--text-color-secondary, #6b7280);
 }
 
-/* 댓글 영역: 기존 mt-1(0.25rem) + 1줄 높이 고정 */
-.recipe-comment-zone {
+.recipe-meta-line--empty {
+    /* §3.2: 값 없어도 1줄 높이 유지 */
+    visibility: hidden;
+}
+
+.recipe-meta-line__item {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+}
+
+.recipe-meta-line__sep {
+    margin: 0 0.35rem;
+    opacity: 0.7;
+}
+
+/* 2단: 작성자 | 조회 · 댓글 — 한 줄 고정 (§3.2) */
+.recipe-zone-2 {
     flex-shrink: 0;
-    min-height: 1.75rem; /* 0.25rem + 1.5rem */
-    display: flex;
-    align-items: flex-start;
-    overflow: hidden;
-}
-
-.recipe-rating {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
+    min-height: 1.75rem;
+    margin-top: 0.15rem;
 }
 
-.rating-text {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.recipe-info {
-    display: flex;
-    gap: 1rem;
-}
-
-.info-item {
+.recipe-author {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.875rem;
-    color: var(--text-color);
+    gap: 0.4rem;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
-.info-item i {
-    font-size: 0.8rem;
-    color: var(--text-color-secondary);
+.recipe-author--spacer {
+    flex: 1 1 auto;
+    min-height: 1.25rem;
 }
 
-.recipe-content .recipe-author span,
-.recipe-content .recipe-comment-count span {
-    font-size: 0.875rem;
-    color: var(--text-color);
+.recipe-author__avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    background: #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
-/* 모바일·태블릿 세로: 2열 — 이미지 포커스 · 텍스트 압축 · 댓글 숨김 */
+.recipe-author__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recipe-author__fallback {
+    font-size: 0.65rem;
+    color: #4b5563;
+}
+
+.recipe-author__name {
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary, #6b7280);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recipe-engagement {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: var(--text-color-secondary, #6b7280);
+    white-space: nowrap;
+}
+
+/* §3.1: 큰 조회수는 시각 무게만 완화 */
+.recipe-engagement--large-hits {
+    font-size: 0.7rem;
+    opacity: 0.85;
+}
+
+.recipe-engagement__sep {
+    margin: 0 0.3rem;
+    opacity: 0.7;
+}
+
+.recipe-engagement__comments {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.recipe-engagement__comments:hover {
+    color: var(--primary-color, #ea580c);
+}
+
+/* 모바일·태블릿 세로: 2열 — 이미지 축소 · 텍스트 압축 */
 @media (max-width: 768px) {
     .recipe-image-container {
-        height: 140px;
+        height: 118px;
     }
 
     .recipe-grid {
@@ -469,10 +513,22 @@
         padding: 0.4rem 0.75rem;
     }
 
-    .recipe-hits-overlay {
-        font-size: 0.65rem;
-        padding: 0.25rem 0.45rem;
-        border-radius: 8px 0 0 0;
+    .recipe-actions {
+        top: 0.35rem;
+        right: 0.35rem;
+        gap: 0.25rem;
+    }
+
+    .recipe-actions .recipe-action-btn.p-button,
+    .recipe-actions .p-button.recipe-action-btn {
+        width: 1.85rem !important;
+        height: 1.85rem !important;
+        min-width: 1.85rem !important;
+        min-height: 1.85rem !important;
+    }
+
+    .recipe-actions .p-button .p-button-icon {
+        font-size: 0.75rem;
     }
 
     .recipe-content {
@@ -489,47 +545,35 @@
     }
 
     .recipe-title-zone {
-        min-height: 0;
-        margin-bottom: 0.1rem;
+        min-height: calc(1.28em * 2);
     }
 
     .recipe-title {
         font-size: 0.82rem;
         line-height: 1.28;
-        margin: 0 0 0.2rem;
     }
 
-    .recipe-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.1rem;
-    }
-
-    .info-item {
+    .recipe-meta-line {
         font-size: 0.7rem;
-        gap: 0.15rem;
+        min-height: 1.05rem;
     }
 
-    .info-item i {
+    .recipe-zone-2 {
+        min-height: 1.35rem;
+        margin-top: 0.1rem;
+    }
+
+    .recipe-author__avatar {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .recipe-author__name {
+        font-size: 0.7rem;
+    }
+
+    .recipe-engagement {
         font-size: 0.65rem;
-    }
-
-    .recipe-author-zone {
-        min-height: 0;
-        margin-top: 0.15rem;
-    }
-
-    .recipe-author.mt-2 {
-        margin-top: 0.2rem !important;
-    }
-
-    .recipe-content .recipe-author span {
-        font-size: 0.7rem;
-    }
-
-    /* 모바일에서 댓글 영역 숨김 */
-    .recipe-comment-zone {
-        display: none;
     }
 
     .recipe-date-footer__text {
@@ -544,7 +588,7 @@
 
 @media (max-width: 480px) {
     .recipe-image-container {
-        height: 125px;
+        height: 105px;
     }
 
     .recipe-grid {
@@ -565,12 +609,16 @@
         padding: 0.35rem 0.6rem;
     }
 
-    .info-item {
+    .recipe-meta-line {
         font-size: 0.68rem;
     }
 
-    .recipe-content .recipe-author span {
+    .recipe-author__name {
         font-size: 0.68rem;
+    }
+
+    .recipe-engagement {
+        font-size: 0.62rem;
     }
 
     .recipe-date-footer__text {
@@ -582,50 +630,74 @@
     }
 }
 
-/* 랭킹 전용: 순위 리스트는 1열 + 썸네일을 Category 2열보다 크게 (Ranking.vue .recipe-grid.ranking-grid) */
-.recipe-grid.ranking-grid {
+/* 랭킹 포디엄: TOP 1~3 — RecipeGridCard 3열 (모바일 1열, 데스크톱 2-1-3 시각 순서) */
+.recipe-grid.ranking-podium {
     grid-template-columns: 1fr;
     gap: 1rem;
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.5rem;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.recipe-grid.ranking-podium .recipe-image-container {
+    height: 168px;
 }
 
 @media (min-width: 769px) {
-    .recipe-grid.ranking-grid {
-        max-width: 720px;
-        margin-left: auto;
-        margin-right: auto;
+    .recipe-grid.ranking-podium {
+        grid-template-columns: 1fr 1.12fr 1fr;
+        align-items: end;
+        gap: 1.125rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .recipe-grid.ranking-podium .ranking-podium__slot--1 {
+        order: 2;
+    }
+
+    .recipe-grid.ranking-podium .ranking-podium__slot--2 {
+        order: 1;
+    }
+
+    .recipe-grid.ranking-podium .ranking-podium__slot--3 {
+        order: 3;
+    }
+
+    .recipe-grid.ranking-podium .ranking-podium__slot--1 .recipe-image-container {
+        height: 220px;
+    }
+
+    .recipe-grid.ranking-podium .ranking-podium__slot--2 .recipe-image-container,
+    .recipe-grid.ranking-podium .ranking-podium__slot--3 .recipe-image-container {
+        height: 180px;
     }
 }
 
 @media (max-width: 768px) {
-    .recipe-grid.ranking-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .recipe-grid.ranking-grid .recipe-image-container {
-        height: 200px;
-    }
-
-    .recipe-grid.ranking-grid .recipe-title {
+    .recipe-grid.ranking-podium .recipe-title {
         font-size: 0.9rem;
     }
 
-    .recipe-grid.ranking-grid .info-item {
+    .recipe-grid.ranking-podium .recipe-meta-line {
         font-size: 0.78rem;
     }
 
-    .recipe-grid.ranking-grid .recipe-content .recipe-author span {
+    .recipe-grid.ranking-podium .recipe-author__name {
         font-size: 0.78rem;
+    }
+
+    .recipe-grid.ranking-podium .recipe-engagement {
+        font-size: 0.72rem;
     }
 }
 
 @media (max-width: 480px) {
-    .recipe-grid.ranking-grid .recipe-image-container {
-        height: 180px;
+    .recipe-grid.ranking-podium .recipe-image-container {
+        height: 152px;
     }
 
-    .recipe-grid.ranking-grid .recipe-title {
+    .recipe-grid.ranking-podium .recipe-title {
         font-size: 0.85rem;
     }
 }

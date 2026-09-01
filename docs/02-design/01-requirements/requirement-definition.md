@@ -6,9 +6,9 @@
 |------|------|
 | 프로젝트명 | JangGunKitchen |
 | 문서명 | 요구사항 정의서 |
-| 버전 | 1.3 |
+| 버전 | 1.4 |
 | 작성일 | 2026-03-14 |
-| 최종 수정일 | 2026-08-29 |
+| 최종 수정일 | 2026-09-01 |
 | 작성 기준 | 본 애플리케이션 구현 기능 분석·추출 |
 
 ---
@@ -55,6 +55,7 @@
 | REQ-MEM-02 | 내 정보 수정 | 닉네임·프로필 이미지 등 프로필 수정 | 기능 | 필수 | 구현됨 | PUT /api/member/profile |
 | REQ-MEM-03 | 타 회원 프로필 조회 | 다른 회원(크리에이터) 프로필·레시피 목록 조회 | 기능 | 필수 | 구현됨 | /member/:id, GET /api/member/{id} |
 | REQ-MEM-04 | 마이페이지 | 내 정보 수정, 내 레시피, 내 댓글, 1:1 문의, 찜 목록, 북마크 관리 탭 제공 | 기능 | 필수 | 구현됨 | /my, tab=profile|recipes|comments|inquiries|favorites|bookmarks |
+| REQ-MEM-05 | 회원 탈퇴 | 로그인 회원 계정 탈퇴(비활성화·연관 정리) | 기능 | 일반 | 구현됨 | DELETE /api/member/me |
 
 ### 2.3 레시피
 
@@ -74,14 +75,14 @@
 | ID | 요구사항명 | 설명 | 유형 | 우선순위 | 구현상태 | 비고 |
 |----|------------|------|------|----------|----------|------|
 | REQ-SCH-01 | 레시피 검색 | 키워드로 레시피 검색 | 기능 | 필수 | 구현됨 | /recipe/search, GET /api/cook/search/recipes |
-| REQ-SCH-02 | 카테고리별 레시피 | 코드별·상세코드별 레시피 목록 조회 | 기능 | 필수 | 구현됨 | /recipe/category, GET /api/cook/categories/{codeId}/{detailCodeId}/recipes |
-| REQ-SCH-03 | 트렌딩 카테고리 | 최근 인기 카테고리 목록 조회 | 기능 | 일반 | 구현됨 | GET /api/cook/categories/trending |
+| REQ-SCH-02 | 카테고리별 레시피 | 코드별·상세코드별 레시피 목록 조회 | 기능 | 필수 | 구현됨 | /recipe/category (공통코드 + 레시피 목록 클라이언트 필터) |
+| REQ-SCH-03 | 트렌딩 카테고리 | ~~최근 인기 카테고리 목록 조회~~ | 기능 | - | 삭제됨 | 2026-08-29 대시보드 섹션·API 제거 |
 
 ### 2.5 대시보드·추천
 
 | ID | 요구사항명 | 설명 | 유형 | 우선순위 | 구현상태 | 비고 |
 |----|------------|------|------|----------|----------|------|
-| REQ-DSH-01 | 메인 대시보드 | 메인 화면에서 오늘의 추천·인기·카테고리·최근 본·추천 크리에이터 표시 | 기능 | 필수 | 구현됨 | /, Dashboard.vue |
+| REQ-DSH-01 | 메인 대시보드 | 메인 화면에서 오늘의 추천·인기·최근 본·추천 크리에이터 표시 | 기능 | 필수 | 구현됨 | /, Dashboard.vue |
 | REQ-DSH-02 | 오늘의 레시피 추천 | 사용자 맞춤 또는 일반 추천 레시피 N건 조회 | 기능 | 필수 | 구현됨 | GET /api/cook/recipes/recommendations/today, 캐시 12시간 |
 | REQ-DSH-03 | 인기 레시피 | 인기도 점수 기반 인기 레시피 목록(기간별 24h/7d/30d) | 기능 | 필수 | 구현됨 | GET /api/cook/recipe/popular |
 | REQ-DSH-04 | 테마 컬렉션 | ~~활성 테마 목록 및 테마별 레시피 목록 조회~~ | 기능 | - | 삭제됨 | 2026-08-29 제거 |
@@ -129,8 +130,8 @@
 |----|------------|------|------|----------|----------|------|
 | REQ-ING-01 | 재료 그룹/재료 조회 | 재료 그룹 목록·재료별 보관법·손질법 조회 | 기능 | 필수 | 구현됨 | GET /api/cook/ingredients/groups, /{id}/storage|preparation |
 | REQ-ING-02 | 재료 상세 화면 | 재료 상세 정보·보관·손질법 표시 | 기능 | 일반 | 구현됨 | /ingredient/management/:id |
-| REQ-ING-03 | 재료 등록 요청 | 사용자 재료 등록 요청 제출 | 기능 | 일반 | 구현됨 | IngredientRequestController |
-| REQ-ING-04 | 재료 요청 목록(내역/관리자) | 본인 요청 목록·관리자 요청 목록·상태 변경 | 기능 | 일반 | 구현됨 | GET /my, /admin, PUT /{id}/status |
+| REQ-ING-03 | 재료 등록 요청 | ~~사용자 재료 등록 요청 제출~~ | 기능 | - | 삭제됨 | 2026-08-29 제거 |
+| REQ-ING-04 | 재료 요청 목록(내역/관리자) | ~~본인 요청 목록·관리자 요청 목록·상태 변경~~ | 기능 | - | 삭제됨 | 2026-08-29 제거 |
 | REQ-INQ-01 | 1:1 문의 등록 | 제목·내용으로 1:1 문의 등록 | 기능 | 필수 | 구현됨 | POST /api/member/inquiries |
 | REQ-INQ-02 | 내 문의 목록·상세·수정·삭제 | 본인 문의 목록·상세 조회·수정·삭제 | 기능 | 필수 | 구현됨 | GET /my, /{id}, PUT/DELETE /{id} |
 | REQ-INQ-03 | 문의 답변(관리자) | 관리자 문의 답변 등록 | 기능 | 필수 | 구현됨 | POST /api/member/inquiries/{id}/reply |
@@ -162,7 +163,7 @@
 | NFR-01 | 반응형 UI | 주요 화면이 다양한 해상도에서 사용 가능하도록 구성 | 비기능 | 일반 | 구현됨 | Vue + PrimeVue |
 | NFR-02 | 인증 기반 접근 제어 | 인증 필요한 API·화면은 JWT 검증 후 접근 허용 | 비기능 | 필수 | 구현됨 | Spring Security, authStore |
 | NFR-03 | 역할 기반 접근(관리자) | 관리자 전용 API·화면은 관리자 역할만 접근 | 비기능 | 필수 | 구현됨 | ADMIN 권한 |
-| NFR-04 | API 캐싱 | 추천·인기·카테고리·크리에이터 등 일부 API 캐시 적용 | 비기능 | 일반 | 구현됨 | Cache-Control, refresh 파라미터 |
+| NFR-04 | API 캐싱 | 추천·인기·크리에이터 등 일부 API 캐시 적용 | 비기능 | 일반 | 구현됨 | Cache-Control, refresh 파라미터 |
 | NFR-05 | 페이지네이션 | 목록 조회 시 limit/offset 기반 페이지네이션 지원 | 비기능 | 필수 | 구현됨 | API·UI 공통 |
 | NFR-06 | 공통 에러 처리 | API 공통 에러 응답 형식·예외 핸들링 | 비기능 | 필수 | 구현됨 | GlobalExceptionHandler 등 |
 | NFR-07 | CORS·보안 설정 | 외부 도메인·헤더 등 보안 설정 | 비기능 | 필수 | 구현됨 | SecurityConfig |
@@ -173,7 +174,7 @@
 
 - **인터페이스**: [02-interface/interface-definition.md](../02-interface/interface-definition.md), [02-interface/api-list.md](../02-interface/api-list.md)
 - **테이블·엔티티**: [03-modeling/table-definition.md](../03-modeling/table-definition.md)
-- **화면·라우트**: [05-program-list/프로그램목록.md](../05-program-list/프로그램목록.md) — 프론트 라우트·View 매핑
+- **화면·라우트**: [05-program-list/program-list.md](../05-program-list/program-list.md), [04-UI/ui-list.md](../04-UI/ui-list.md) — 프론트 라우트·View 매핑
 - **백엔드 API 목록**: [02-interface/api-list.md](../02-interface/api-list.md) — Controller·Base Path·주요 메서드
 
 ---
@@ -185,3 +186,5 @@
 | 1.0 | 2026-02-20 | 최초 작성(구현 기능 기반 요구사항 추출) |
 | 1.1 | 2026-03-14 | 참조 문서 링크 정정(api-specification→interface-definition·api-list, entity-design→테이블정의서), 문서 정보 최신화 |
 | 1.2 | 2026-04-17 | 현재 애플리케이션 라우트 기준으로 소셜 콜백 경로(custom→google), FAQ 경로(/support), 에러 경로(/error/access, /error/error) 표기 정정 |
+| 1.3 | 2026-08-29 | 테마 컬렉션·트렌딩 카테고리·재료 정보 요청 워크플로우 삭제 반영 |
+| 1.4 | 2026-09-01 | 회원 탈퇴(REQ-MEM-05) 추가, 프로그램 목록 링크 `program-list.md`로 정정 |

@@ -1,6 +1,6 @@
 import { httpJson, httpForm } from '@/utils/http';
 import { getApiBaseUrl } from '@/utils/constants';
-import type { IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation, IngredientRequest, IngredientRequestResponse } from '@/types/ingredient';
+import type { IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation } from '@/types/ingredient';
 
 const BASE_URL = getApiBaseUrl();
 
@@ -51,61 +51,6 @@ export async function getIngredientStorage(ingredientId: number): Promise<Ingred
  */
 export async function getIngredientPreparation(ingredientId: number): Promise<IngredientPreparation> {
     const response = await httpJson<{ data: IngredientPreparation }>(BASE_URL, `/api/cook/ingredients/${ingredientId}/preparation`, { method: 'GET' });
-    return response.data;
-}
-
-/**
- * 재료 정보 요청 생성
- */
-export async function createIngredientRequest(request: IngredientRequest): Promise<IngredientRequestResponse> {
-    const response = await httpJson<{ data: IngredientRequestResponse }>(BASE_URL, '/api/cook/ingredients/requests', {
-        method: 'POST',
-        body: JSON.stringify(request)
-    });
-    return response.data;
-}
-
-/**
- * 사용자의 요청 목록 조회
- */
-export async function getMyIngredientRequests(): Promise<IngredientRequestResponse[]> {
-    const response = await httpJson<{ requests?: IngredientRequestResponse[] }>(BASE_URL, '/api/cook/ingredients/requests/my', { method: 'GET' });
-    return response.requests || [];
-}
-
-export interface AdminIngredientRequestsResponse {
-    requests: IngredientRequestResponse[];
-    totalCount: number;
-    totalPages: number;
-    currentPage: number;
-}
-
-/**
- * 관리자용 재료 정보 요청 목록 조회
- */
-export async function getAdminIngredientRequests(params?: { page?: number; size?: number; status?: string }): Promise<AdminIngredientRequestsResponse> {
-    const queryParams = new URLSearchParams();
-    if (params?.page != null) queryParams.append('page', params.page.toString());
-    if (params?.size != null) queryParams.append('size', params.size.toString());
-    if (params?.status) queryParams.append('status', params.status);
-
-    const response = await httpJson<AdminIngredientRequestsResponse>(BASE_URL, `/api/cook/ingredients/requests/admin?${queryParams}`, { method: 'GET' });
-    return {
-        requests: response.requests || [],
-        totalCount: response.totalCount ?? 0,
-        totalPages: response.totalPages ?? 0,
-        currentPage: response.currentPage ?? 0
-    };
-}
-
-/**
- * 재료 정보 요청 상태 업데이트 (관리자 전용)
- */
-export async function updateIngredientRequestStatus(requestId: number, status: string): Promise<IngredientRequestResponse> {
-    const response = await httpJson<{ data: IngredientRequestResponse }>(BASE_URL, `/api/cook/ingredients/requests/${requestId}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status })
-    });
     return response.data;
 }
 

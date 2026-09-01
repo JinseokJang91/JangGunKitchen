@@ -1,7 +1,7 @@
 # Frontend 패키지 및 파일 구조도
 
 **작성일**: 2026-04-14  
-**최종 수정일**: 2026-08-29  
+**최종 수정일**: 2026-09-01  
 **대상**: `frontend/` (Vue 3 + TypeScript + Vite + PrimeVue)
 
 ---
@@ -37,7 +37,6 @@ src/
 ├── api/                         # 도메인별 백엔드 API 호출 모듈
 │   ├── authApi.ts
 │   ├── bookmarkApi.ts
-│   ├── categoryApi.ts
 │   ├── commonCodeApi.ts
 │   ├── creatorApi.ts
 │   ├── followApi.ts
@@ -97,8 +96,7 @@ src/
 │       │   ├── IngredientGroupManagement.vue
 │       │   ├── IngredientGroupRegister.vue
 │       │   ├── IngredientManagementRegister.vue
-│       │   ├── IngredientRegister.vue
-│       │   └── IngredientRequestList.vue
+│       │   └── IngredientRegister.vue
 │       ├── auth/
 │       │   ├── Login.vue
 │       │   ├── OAuthCallback.vue
@@ -151,8 +149,6 @@ src/
 │   ├── community/
 │   │   └── FAQ.vue
 │   ├── dashboard/
-│   │   ├── CategorySection.vue
-│   │   ├── CategorySections.vue
 │   │   ├── PopularRecipes.vue
 │   │   ├── RecentViews.vue
 │   │   ├── RecommendedCreators.vue
@@ -178,7 +174,6 @@ src/
 │       ├── RecipeDetailIngredients.vue
 │       ├── RecipeDetailSteps.vue
 │       ├── RecipeGridCard.vue
-│       ├── RecipeListItem.vue
 │       └── form/
 │           ├── RecipeFormBasicInfo.vue
 │           ├── RecipeFormClassification.vue

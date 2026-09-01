@@ -1,8 +1,9 @@
 # 테이블 정의서
 
-**작성 기준**: Backend `@Entity` / `@Table` 분석  
-**기준일**: 2026-04-17  
-**적용 범위**: JangGunKitchen 애플리케이션 전체 (backend/app 도메인 패키지 auth, common, member, cook)
+**작성 기준**: Backend `@Entity` / `@Table` + Flyway V1~V4  
+**기준일**: 2026-09-01  
+**적용 범위**: JangGunKitchen 애플리케이션 전체 (backend/app 도메인 패키지 auth, common, member, cook)  
+**DB**: PostgreSQL (`TIMESTAMP` 사용)
 
 ---
 
@@ -53,7 +54,6 @@
 | ingredient | Ingredient | 재료 |
 | ingredient_storage | IngredientStorage | 재료 보관법 |
 | ingredient_preparation | IngredientPreparation | 재료 손질법 |
-| ingredient_request | IngredientRequest | 재료 등록 요청 |
 
 ---
 
@@ -67,16 +67,16 @@
 |----|--------|--------|------------|------|----|----|--------|------|
 | 1 | token | 토큰 | VARCHAR(500) | N | Y | - | - | PK |
 | 2 | user_id | 사용자ID | BIGINT | N | - | - | - | |
-| 3 | expires_at | 만료일시 | DATETIME | N | - | - | - | |
-| 4 | created_at | 등록일시 | DATETIME | Y | - | - | - | 생성 시 자동 |
+| 3 | expires_at | 만료일시 | TIMESTAMP | N | - | - | - | |
+| 4 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | 생성 시 자동 |
 
 #### 2.1.2 token_blacklist (토큰 블랙리스트)
 
 | No | 컬럼명 | 한글명 | 데이터타입 | NULL | PK | FK | 기본값 | 비고 |
 |----|--------|--------|------------|------|----|----|--------|------|
 | 1 | token | 토큰 | VARCHAR(500) | N | Y | - | - | PK |
-| 2 | expires_at | 만료일시 | DATETIME | N | - | - | - | |
-| 3 | blacklisted_at | 블랙리스트등록일시 | DATETIME | Y | - | - | - | 생성 시 자동 |
+| 2 | expires_at | 만료일시 | TIMESTAMP | N | - | - | - | |
+| 3 | blacklisted_at | 블랙리스트등록일시 | TIMESTAMP | Y | - | - | - | 생성 시 자동 |
 
 ---
 
@@ -95,12 +95,13 @@
 | 7 | birth | 생년월일 | VARCHAR(10) | Y | - | - | - | |
 | 8 | gender | 성별 | VARCHAR(20) | Y | - | - | - | MALE/FEMALE/UNKNOWN |
 | 9 | social_role | 소셜역할 | VARCHAR(20) | N | - | - | - | NAVER/KAKAO/GOOGLE |
-| 10 | profile_image | 프로필이미지URL | VARCHAR(500) | Y | - | - | - | |
-| 11 | bio | 소개 | VARCHAR(500) | Y | - | - | - | |
-| 12 | follower_count | 팔로워수 | BIGINT | Y | - | - | 0 | |
-| 13 | following_count | 팔로잉수 | BIGINT | Y | - | - | 0 | |
-| 14 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 15 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 10 | role | 권한 | VARCHAR(20) | N | - | - | USER | USER/ADMIN (V2) |
+| 11 | profile_image | 프로필이미지URL | VARCHAR(500) | Y | - | - | - | |
+| 12 | bio | 소개 | VARCHAR(500) | Y | - | - | - | |
+| 13 | follower_count | 팔로워수 | BIGINT | Y | - | - | 0 | |
+| 14 | following_count | 팔로잉수 | BIGINT | Y | - | - | 0 | |
+| 15 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 16 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.2.2 follow (팔로우)
 
@@ -109,7 +110,7 @@
 | 1 | id | ID | BIGINT | N | Y | - | - | PK, IDENTITY |
 | 2 | follower_id | 팔로워회원ID | BIGINT | N | - | - | - | 팔로우하는 사람 |
 | 3 | following_id | 팔로잉회원ID | BIGINT | N | - | - | - | 팔로우당하는 사람 |
-| 4 | created_at | 등록일시 | DATETIME | Y | - | - | - | UK: (follower_id, following_id) |
+| 4 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | UK: (follower_id, following_id) |
 
 #### 2.2.3 common_code (공통코드 마스터)
 
@@ -119,8 +120,8 @@
 | 2 | code_group | 코드그룹 | VARCHAR(30) | N | - | - | - | |
 | 3 | code_name | 코드명 | VARCHAR(50) | N | - | - | - | |
 | 4 | use_yn | 사용여부 | VARCHAR(2) | Y | - | - | - | |
-| 5 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 6 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 5 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 6 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.2.4 common_code_detail (공통코드 상세)
 
@@ -131,8 +132,8 @@
 | 3 | code_name | 코드명 | VARCHAR(50) | N | - | - | - | |
 | 4 | sort | 정렬순서 | INT | Y | - | - | - | |
 | 5 | use_yn | 사용여부 | VARCHAR(2) | Y | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 ---
 
@@ -147,8 +148,8 @@
 | 3 | inquiry_type | 문의유형 | VARCHAR(30) | N | - | - | - | |
 | 4 | title | 제목 | VARCHAR(100) | N | - | - | - | |
 | 5 | content | 내용 | TEXT | N | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.3.2 inquiry_reply (문의 답변)
 
@@ -158,7 +159,7 @@
 | 2 | inquiry_id | 문의ID | BIGINT | N | - | FK | - | inquiry 참조, UK |
 | 3 | content | 답변내용 | TEXT | N | - | - | - | |
 | 4 | reply_by | 답변자ID | BIGINT | Y | - | - | - | |
-| 5 | replied_at | 답변일시 | DATETIME | Y | - | - | - | |
+| 5 | replied_at | 답변일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.3.3 inquiry_image (문의 이미지)
 
@@ -185,8 +186,8 @@
 | 6 | thumbnail | 썸네일URL | VARCHAR(255) | Y | - | - | - | |
 | 7 | hits | 조회수 | BIGINT | Y | - | - | 0 | |
 | 8 | member_id | 작성회원ID | BIGINT | N | - | - | - | |
-| 9 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 10 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 9 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 10 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.2 recipe_detail (레시피 상세)
 
@@ -197,8 +198,8 @@
 | 3 | image | 단계이미지URL | VARCHAR(500) | Y | - | - | - | |
 | 4 | description | 설명 | TEXT | N | - | - | - | |
 | 5 | recipe_id | 레시피ID | BIGINT | N | - | FK | - | recipe 참조 |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.3 recipe_image (레시피 이미지)
 
@@ -213,8 +214,8 @@
 | 7 | sort_order | 정렬순서 | INT | Y | - | - | - | |
 | 8 | is_main_image | 대표이미지여부 | BIT | Y | - | - | - | |
 | 9 | recipe_id | 레시피ID | BIGINT | N | - | FK | - | recipe 참조 |
-| 10 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 11 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 10 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 11 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.4 recipe_category (레시피-카테고리/조리팁)
 
@@ -224,8 +225,8 @@
 | 2 | code_id | 코드ID | VARCHAR(30) | Y | Y | FK | - | PK, common_code_detail |
 | 3 | detail_code_id | 상세코드ID | VARCHAR(30) | Y | Y | FK | - | PK, common_code_detail |
 | 4 | code_group | 코드그룹 | VARCHAR(255) | Y | - | - | - | CATEGORY/COOKINGTIP 등 |
-| 5 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 6 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 5 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 6 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.5 recipe_ingredient_group (레시피 재료 그룹)
 
@@ -237,8 +238,8 @@
 | 4 | type_code_id | 그룹타입코드ID | VARCHAR(30) | Y | - | FK | - | common_code_detail |
 | 5 | type_detail_code_id | 그룹타입상세코드ID | VARCHAR(30) | Y | - | FK | - | common_code_detail |
 | 6 | custom_type_name | 사용자정의타입명 | VARCHAR(50) | Y | - | - | - | |
-| 7 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 8 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 7 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 8 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.6 recipe_ingredient_item (재료 항목)
 
@@ -252,8 +253,8 @@
 | 6 | unit_code_id | 단위코드ID | VARCHAR(30) | Y | - | FK | - | common_code_detail |
 | 7 | unit_detail_code_id | 단위상세코드ID | VARCHAR(30) | Y | - | FK | - | common_code_detail |
 | 8 | custom_unit_name | 사용자정의단위명 | VARCHAR(20) | Y | - | - | - | |
-| 9 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 10 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 9 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 10 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.7 recipe_comment (레시피 댓글)
 
@@ -266,8 +267,8 @@
 | 5 | image_storage_key | 이미지스토리지키 | VARCHAR(255) | Y | - | - | - | |
 | 6 | member_id | 회원ID | BIGINT | N | - | - | - | |
 | 7 | recipe_id | 레시피ID | BIGINT | N | - | FK | - | recipe 참조 |
-| 8 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 9 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 8 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 9 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.8 recipe_favorite (레시피 찜)
 
@@ -276,7 +277,7 @@
 | 1 | id | ID | BIGINT | N | Y | - | - | PK, IDENTITY |
 | 2 | member_id | 회원ID | BIGINT | N | - | - | - | UK: (member_id, recipe_id) |
 | 3 | recipe_id | 레시피ID | BIGINT | N | - | - | - | |
-| 4 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
+| 4 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.9 recipe_view (레시피 조회 기록)
 
@@ -285,9 +286,9 @@
 | 1 | id | ID | BIGINT | N | Y | - | - | PK, IDENTITY |
 | 2 | member_id | 회원ID | BIGINT | N | - | - | - | UK: (member_id, recipe_id) |
 | 3 | recipe_id | 레시피ID | BIGINT | N | - | - | - | |
-| 4 | viewed_at | 조회일시 | DATETIME | N | - | - | - | |
-| 5 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 6 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 4 | viewed_at | 조회일시 | TIMESTAMP | N | - | - | - | |
+| 5 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 6 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.10 recipe_popularity (레시피 인기도)
 
@@ -301,8 +302,8 @@
 | 6 | favorite_count | 찜수 | BIGINT | Y | - | - | 0 | |
 | 7 | comment_count | 댓글수 | BIGINT | Y | - | - | 0 | |
 | 8 | favorite_increase_24h | 24시간찜증가 | BIGINT | Y | - | - | 0 | |
-| 9 | calculated_at | 산출일시 | DATETIME | N | - | - | - | |
-| 10 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 9 | calculated_at | 산출일시 | TIMESTAMP | N | - | - | - | |
+| 10 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.11 recipe_popularity_history (인기 순위 이력)
 
@@ -312,7 +313,7 @@
 | 2 | recipe_id | 레시피ID | BIGINT | N | - | - | - | |
 | 3 | rank | 순위 | INT | N | - | - | - | |
 | 4 | popularity_score | 인기도점수 | DOUBLE | N | - | - | - | |
-| 5 | recorded_at | 기록일시 | DATETIME | N | - | - | - | |
+| 5 | recorded_at | 기록일시 | TIMESTAMP | N | - | - | - | |
 
 #### 2.4.12 recipe_bookmark (레시피 북마크)
 
@@ -323,7 +324,7 @@
 | 3 | recipe_id | 레시피ID | BIGINT | N | - | - | - | |
 | 4 | member_id | 회원ID | BIGINT | N | - | - | - | |
 | 5 | memo | 메모 | VARCHAR(500) | Y | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.4.13 recipebook (레시피북)
 
@@ -334,8 +335,8 @@
 | 3 | name | 이름 | VARCHAR(50) | N | - | - | - | |
 | 4 | color | 색상 | VARCHAR(20) | Y | - | - | blue | |
 | 5 | sort_order | 정렬순서 | INT | N | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 ---
 
@@ -349,8 +350,8 @@
 | 2 | name | 이름 | VARCHAR(50) | N | - | - | - | |
 | 3 | image_url | 이미지URL | VARCHAR(200) | Y | - | - | - | |
 | 4 | sort_order | 정렬순서 | INT | Y | - | - | 0 | |
-| 5 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 6 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 5 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 6 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.5.2 ingredient (재료)
 
@@ -361,8 +362,8 @@
 | 3 | group_id | 그룹ID | BIGINT | N | - | FK | - | ingredient_group 참조 |
 | 4 | image_url | 이미지URL | VARCHAR(200) | Y | - | - | - | |
 | 5 | sort_order | 정렬순서 | INT | Y | - | - | 0 | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.5.3 ingredient_storage (재료 보관법)
 
@@ -373,8 +374,8 @@
 | 3 | content | 내용 | TEXT | N | - | - | - | |
 | 4 | summary | 요약 | VARCHAR(500) | Y | - | - | - | |
 | 5 | created_by | 등록자ID | BIGINT | Y | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 #### 2.5.4 ingredient_preparation (재료 손질법)
 
@@ -385,21 +386,8 @@
 | 3 | content | 내용 | TEXT | N | - | - | - | |
 | 4 | summary | 요약 | VARCHAR(500) | Y | - | - | - | |
 | 5 | created_by | 등록자ID | BIGINT | Y | - | - | - | |
-| 6 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 7 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
-
-#### 2.5.5 ingredient_request (재료 등록 요청)
-
-| No | 컬럼명 | 한글명 | 데이터타입 | NULL | PK | FK | 기본값 | 비고 |
-|----|--------|--------|------------|------|----|----|--------|------|
-| 1 | id | ID | BIGINT | N | Y | - | - | PK, IDENTITY |
-| 2 | ingredient_name | 재료명 | VARCHAR(100) | N | - | - | - | |
-| 3 | request_type | 요청유형 | VARCHAR(20) | N | - | - | - | |
-| 4 | message | 메시지 | TEXT | Y | - | - | - | |
-| 5 | member_id | 회원ID | BIGINT | Y | - | - | - | |
-| 6 | status | 상태 | VARCHAR(20) | N | - | - | PENDING | |
-| 7 | created_at | 등록일시 | DATETIME | Y | - | - | - | |
-| 8 | updated_at | 수정일시 | DATETIME | Y | - | - | - | |
+| 6 | created_at | 등록일시 | TIMESTAMP | Y | - | - | - | |
+| 7 | updated_at | 수정일시 | TIMESTAMP | Y | - | - | - | |
 
 ---
 
@@ -413,9 +401,9 @@
 | follow | Follow (common.domain.entity) |
 | common_code | CommonCode (common.domain.entity) |
 | common_code_detail | CommonCodeDetail (common.domain.entity) |
-| inquiry | Inquiry (member.api.domain.entity) |
-| inquiry_reply | InquiryReply (member.api.domain.entity) |
-| inquiry_image | InquiryImage (member.api.domain.entity) |
+| inquiry | Inquiry (member.api.inquiry.domain.entity) |
+| inquiry_reply | InquiryReply (member.api.inquiry.domain.entity) |
+| inquiry_image | InquiryImage (member.api.inquiry.domain.entity) |
 | recipe | Recipe (cook.api.recipe.domain.entity) |
 | recipe_detail | RecipeDetail (cook.api.recipe.domain.entity) |
 | recipe_image | RecipeImage (cook.api.recipe.domain.entity) |
@@ -433,10 +421,21 @@
 | ingredient | Ingredient (cook.api.ingredient.domain.entity) |
 | ingredient_storage | IngredientStorage (cook.api.ingredient.domain.entity) |
 | ingredient_preparation | IngredientPreparation (cook.api.ingredient.domain.entity) |
-| ingredient_request | IngredientRequest (cook.api.ingredient.domain.entity) |
 
 ---
 
-## 4. 참고
+## 4. 삭제된 테이블 (Flyway)
 
-- **인덱스·UK**: Entity의 `@Index`, `@UniqueConstraint` 기준으로 정의되어 있으며, 상세 DDL은 각 서비스 스키마/마이그레이션 참고.
+V1 베이스라인에 생성되었다가 이후 버전에서 DROP된 테이블이다. 현행 스키마에는 없다.
+
+| 테이블 | DROP 마이그레이션 | 비고 |
+|--------|-------------------|------|
+| theme_collection_recipe | V3__drop_theme_collection.sql | 테마-레시피 연결 |
+| theme_collection | V3__drop_theme_collection.sql | 테마 컬렉션 |
+| ingredient_request | V4__drop_ingredient_request.sql | 재료 정보 요청 |
+
+---
+
+## 5. 참고
+
+- **인덱스·UK**: Entity의 `@Index`, `@UniqueConstraint` 기준으로 정의되어 있으며, 상세 DDL은 `backend/database-migrations` Flyway 참고

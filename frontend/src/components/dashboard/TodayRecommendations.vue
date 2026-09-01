@@ -3,10 +3,13 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
+import Card from 'primevue/card';
 import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
 import { getTodayRecommendations } from '@/api/recommendationApi';
 import type { TodayRecommendationsResponse } from '@/types/recipe';
 import { isEmptyDataError } from '@/utils/errorHandler';
+import { resolveProfileImage } from '@/utils/image';
 
 const router = useRouter();
 const toast = useToast();
@@ -108,10 +111,10 @@ defineExpose({
             <div>
                 <h2 class="section-title">
                     <i class="pi pi-sparkles"></i>
-                    오늘의 레시피 추천
+                    오늘의 추천 레시피
                 </h2>
                 <p class="section-subtitle" v-if="recommendations">
-                    {{ recommendations.recommendationType === 'PERSONALIZED' ? '당신을 위한 맞춤 추천' : '오늘의 인기 레시피' }}
+                    {{ recommendations.recommendationType === 'PERSONALIZED' ? '당신을 위한 맞춤 추천 레시피를 확인해보세요' : '오늘의 인기 레시피를 확인해보세요' }}
                 </p>
             </div>
             <div class="header-actions" v-if="recommendations?.refreshable">
@@ -128,54 +131,53 @@ defineExpose({
 
         <!-- 추천 레시피 -->
         <div v-else-if="recommendations && recommendations.recipes.length > 0" class="recommendations-grid">
-            <div v-for="recipe in recommendations.recipes" :key="recipe.id" class="recommendation-card" @click="goToRecipe(recipe.id)">
-                <!-- 추천 이유 배지 -->
-                <div class="recommend-badge" v-if="recipe.recommendReason">
-                    <i class="pi pi-star-fill"></i>
-                    {{ recipe.recommendReason }}
-                </div>
+            <div v-for="recipe in recommendations.recipes" :key="recipe.id" class="recommendation-card-wrapper" @click="goToRecipe(recipe.id)">
+                <Card class="recommendation-card">
+                    <template #header>
+                        <div class="card-thumbnail">
+                            <div class="recommend-badge" v-if="recipe.recommendReason">
+                                <i class="pi pi-star-fill"></i>
+                                {{ recipe.recommendReason }}
+                            </div>
+                            <img :src="recipe.thumbnail || '/placeholder.jpg'" :alt="recipe.title" />
+                        </div>
+                    </template>
+                    <template #content>
+                        <div class="card-info">
+                            <h3 class="recipe-title">{{ recipe.title }}</h3>
+                            <p class="recipe-description" v-if="recipe.description">
+                                {{ recipe.description }}
+                            </p>
 
-                <!-- 썸네일 -->
-                <div class="card-thumbnail">
-                    <img :src="recipe.thumbnail || '/placeholder.jpg'" :alt="recipe.title" />
-                </div>
+                            <div class="recipe-categories" v-if="recipe.categories && recipe.categories.length > 0">
+                                <Tag v-for="category in recipe.categories.slice(0, 2)" :key="`${category.codeId}-${category.detailCodeId}`" :value="category.detailName" severity="secondary" class="category-tag" />
+                            </div>
 
-                <!-- 정보 -->
-                <div class="card-info">
-                    <h3 class="recipe-title">{{ recipe.title }}</h3>
-                    <p class="recipe-description" v-if="recipe.description">
-                        {{ recipe.description }}
-                    </p>
+                            <div class="recipe-author">
+                                <img v-if="recipe.memberProfileImage" :src="resolveProfileImage(recipe.memberProfileImage)" :alt="recipe.memberNickname || '익명'" class="recipe-author__avatar" />
+                                <div v-else class="recipe-author__avatar recipe-author__avatar--placeholder">
+                                    <i class="pi pi-user"></i>
+                                </div>
+                                <span class="recipe-author__name">{{ recipe.memberNickname || '익명' }}</span>
+                            </div>
 
-                    <!-- 카테고리 -->
-                    <div class="recipe-categories" v-if="recipe.categories && recipe.categories.length > 0">
-                        <span v-for="category in recipe.categories.slice(0, 2)" :key="`${category.codeId}-${category.detailCodeId}`" class="category-tag">
-                            {{ category.detailName }}
-                        </span>
-                    </div>
-
-                    <!-- 작성자 -->
-                    <div class="recipe-author">
-                        <i class="pi pi-user"></i>
-                        {{ recipe.memberNickname || '익명' }}
-                    </div>
-
-                    <!-- 통계 -->
-                    <div class="recipe-stats">
-                        <span>
-                            <i class="pi pi-eye"></i>
-                            {{ formatNumber(recipe.hits || 0) }}
-                        </span>
-                        <span>
-                            <i class="pi pi-heart"></i>
-                            {{ formatNumber(recipe.favoriteCount || 0) }}
-                        </span>
-                        <span v-if="recipe.commentCount">
-                            <i class="pi pi-comment"></i>
-                            {{ formatNumber(recipe.commentCount) }}
-                        </span>
-                    </div>
-                </div>
+                            <div class="recipe-stats">
+                                <span>
+                                    <i class="pi pi-eye"></i>
+                                    {{ formatNumber(recipe.hits || 0) }}
+                                </span>
+                                <span>
+                                    <i class="pi pi-heart"></i>
+                                    {{ formatNumber(recipe.favoriteCount || 0) }}
+                                </span>
+                                <span v-if="recipe.commentCount">
+                                    <i class="pi pi-comment"></i>
+                                    {{ formatNumber(recipe.commentCount) }}
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                </Card>
             </div>
         </div>
 
@@ -229,18 +231,52 @@ defineExpose({
     gap: 24px;
 }
 
-.recommendation-card {
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    background: var(--surface-card);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+.recommendation-card-wrapper {
+    height: 100%;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease;
 
     &:hover {
         transform: translateY(-8px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+
+        .recommendation-card {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-thumbnail img {
+            transform: scale(1.05);
+        }
+    }
+}
+
+.recommendation-card {
+    height: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+
+    :deep(.p-card-header) {
+        padding: 0;
+        flex-shrink: 0;
+    }
+
+    :deep(.p-card-body) {
+        padding: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    :deep(.p-card-content) {
+        padding: 0;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
     }
 }
 
@@ -265,6 +301,7 @@ defineExpose({
 }
 
 .card-thumbnail {
+    position: relative;
     width: 100%;
     height: 200px;
     overflow: hidden;
@@ -275,37 +312,50 @@ defineExpose({
         object-fit: cover;
         transition: transform 0.3s ease;
     }
-
-    .recommendation-card:hover & img {
-        transform: scale(1.05);
-    }
 }
 
 .card-info {
     padding: 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .recipe-title {
+    width: 100%;
+    min-width: 0;
     font-size: 18px;
     font-weight: 700;
+    line-height: 1.35;
     color: var(--text-color);
-    margin-bottom: 8px;
+    margin: 0 0 8px;
+    min-height: calc(1.35em * 2);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .recipe-description {
+    width: 100%;
+    min-width: 0;
     font-size: 13px;
+    line-height: 1.45;
     color: var(--text-color-secondary);
-    margin-bottom: 12px;
+    margin: 0 0 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .recipe-categories {
@@ -316,11 +366,7 @@ defineExpose({
 }
 
 .category-tag {
-    padding: 4px 10px;
-    background: var(--surface-ground);
-    color: var(--text-color);
-    border-radius: 12px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 500;
 }
 
@@ -330,11 +376,34 @@ defineExpose({
     margin-bottom: 12px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0.5rem;
+    min-width: 0;
+}
 
-    i {
-        font-size: 11px;
+.recipe-author__avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex-shrink: 0;
+
+    &--placeholder {
+        background: #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+
+        i {
+            font-size: 0.625rem;
+        }
     }
+}
+
+.recipe-author__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .recipe-stats {
@@ -342,6 +411,7 @@ defineExpose({
     gap: 16px;
     font-size: 12px;
     color: var(--text-color-secondary);
+    margin-top: auto;
     padding-top: 12px;
     border-top: 1px solid var(--surface-border);
 
@@ -409,7 +479,7 @@ defineExpose({
         gap: 1rem;
     }
 
-    .recommendation-card {
+    .recommendation-card-wrapper {
         max-width: none;
         margin: 0;
     }
@@ -421,6 +491,7 @@ defineExpose({
     .recipe-title {
         font-size: 1rem;
         margin-bottom: 6px;
+        min-height: calc(1.35em * 2);
     }
 
     .recipe-description {

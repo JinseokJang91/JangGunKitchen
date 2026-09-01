@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import logoText from '@/assets/images/logo/logo-full.png';
+import logoText from '@/assets/images/logo/logo-icon.png';
 import badgeAppStore from '@/assets/images/badges/badge_appstore.svg';
 import badgeGooglePlay from '@/assets/images/badges/badge_googleplay.svg';
 import iconYouTube from '@/assets/images/badges/badge_youtube.png';
-import iconInstagram from '@/assets/images/badges/badge_instagram.svg';
+import iconInstagram from '@/assets/images/badges/badge_instagram.png';
 import iconFacebook from '@/assets/images/badges/badge_facebook.png';
 import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
 </script>
@@ -46,7 +46,7 @@ import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
                     </a>
                 </div>
                 <div class="footer-links-group">
-                    <a href="#" class="footer-link">ABOUT US</a><span class="divider">|</span> <router-link to="/support" class="footer-link">고객지원</router-link><span class="divider">|</span> <a href="#" class="footer-link">이용약관</a>
+                    <a href="#" class="footer-link">About Us</a><span class="divider">|</span> <router-link to="/support" class="footer-link">고객지원</router-link><span class="divider">|</span> <a href="#" class="footer-link">이용약관</a>
                     <span class="divider">|</span>
                     <a href="#" class="footer-link">개인정보처리방침</a>
                 </div>
@@ -57,9 +57,9 @@ import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
         <!-- Footer 하단: 사업자 정보 및 copyright -->
         <div class="footer-bottom">
             <div class="company-info">
-                <span>(주)너스레</span>
+                <span>㈜장군의부엌</span>
                 <span class="divider">|</span>
-                <span>대표: 홍길동</span>
+                <span>대표: 장진석</span>
                 <span class="divider">|</span>
                 <span>사업자번호: 123-45-67890</span>
                 <span class="divider">|</span>
@@ -67,7 +67,7 @@ import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
                 <span class="divider">|</span>
                 <span>이메일: test@abc.com</span>
             </div>
-            <p class="copyright">© 2026 KNUSRAE. All rights reserved.</p>
+            <p class="copyright">© 2026 JANGGUNKITCHEN. All rights reserved.</p>
         </div>
     </footer>
 </template>

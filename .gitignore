@@ -124,6 +124,11 @@ dist/
 /frontend/api-generator/typedoc.json
 
 # ========================
+# Docker local overrides
+# ========================
+docker-compose.override.yml
+
+# ========================
 # Generated docs / diagrams
 # ========================
 docs/_book/

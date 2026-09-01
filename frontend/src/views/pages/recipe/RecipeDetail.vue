@@ -8,6 +8,7 @@ import BookmarkDialog from '@/components/bookmark/BookmarkDialog.vue';
 import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useConfirm } from 'primevue/useconfirm';
+import Button from 'primevue/button';
 import { useAuthStore } from '@/stores/authStore';
 import { useErrorHandler } from '@/utils/errorHandler';
 import { useAppToast } from '@/utils/toast';
@@ -726,22 +727,22 @@ const onBookmarked = async () => {
 <template>
     <div class="page-container recipe-detail-page">
         <div class="min-h-screen">
-            <!-- 로딩 상태 -->
-            <div v-if="loading" class="flex items-center justify-center min-h-screen">
-                <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-500"></div>
+            <!-- 로딩: 스켈레톤 -->
+            <div v-if="loading" class="recipe-detail-content recipe-detail-skeleton" aria-busy="true" aria-label="레시피 불러오는 중">
+                <div class="recipe-detail-skeleton__hero"></div>
+                <div class="recipe-detail-skeleton__block recipe-detail-skeleton__block--lg"></div>
+                <div class="recipe-detail-skeleton__block"></div>
+                <div class="recipe-detail-skeleton__block recipe-detail-skeleton__block--lg"></div>
             </div>
 
-            <!-- 에러 상태 -->
-            <div v-else-if="error" class="flex items-center justify-center min-h-screen">
-                <div class="text-center">
-                    <div class="text-6xl mb-4">😞</div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">레시피를 찾을 수 없습니다</h2>
-                    <p class="text-gray-600 mb-4">{{ error }}</p>
-                    <button @click="goBack" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">돌아가기</button>
-                </div>
+            <!-- 에러 -->
+            <div v-else-if="error" class="recipe-detail-error">
+                <h2 class="recipe-detail-error__title">레시피를 찾을 수 없습니다</h2>
+                <p class="recipe-detail-error__text">{{ error }}</p>
+                <Button label="돌아가기" icon="pi pi-arrow-left" severity="secondary" @click="goBack" />
             </div>
 
-            <!-- 레시피 상세 내용 (page-container 너비에 맞춤, 다른 화면과 동일) -->
+            <!-- 레시피 상세 내용 -->
             <div v-else-if="recipe" class="recipe-detail-content">
                 <RecipeDetailHeader
                     :recipe="recipe"
@@ -766,7 +767,6 @@ const onBookmarked = async () => {
 
                 <RecipeDetailGallery :images="recipe.images || []" />
 
-                <!-- 댓글 섹션 -->
                 <RecipeComments
                     :comments="comments"
                     :is-logged-in="isLoggedIn"
@@ -811,7 +811,6 @@ const onBookmarked = async () => {
             </div>
         </div>
 
-        <!-- 이미지 모달 (body로 텔레포트) -->
         <Teleport to="body">
             <div v-if="showImageModal" @click="closeImageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[1000]" data-modal="image-modal">
                 <div class="relative max-w-4xl max-h-full p-4" @click.stop>
@@ -823,41 +822,10 @@ const onBookmarked = async () => {
             </div>
         </Teleport>
 
-        <!-- 북마크 Dialog -->
         <BookmarkDialog v-model:visible="bookmarkDialogVisible" :recipe-id="recipe?.id || null" @bookmarked="onBookmarked" />
     </div>
 </template>
 
 <style scoped lang="scss">
-/* 본문은 layout 배경(#fff7ed 계열) 위에 카드만 띄움 — 캡처와 동일한 톤 유지 */
-.recipe-detail-page {
-    min-width: 0;
-}
-
-.recipe-detail-content {
-    padding: 2rem 0 2.5rem;
-}
-@media (max-width: 768px) {
-    .recipe-detail-content {
-        padding: 1rem 0 1.5rem;
-    }
-}
-@media (max-width: 480px) {
-    .recipe-detail-content {
-        padding: 0.75rem 0 1.25rem;
-    }
-}
-
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+/* 페이지/스켈레톤/에러/섹션 토큰: _recipe-detail.scss */
 </style>

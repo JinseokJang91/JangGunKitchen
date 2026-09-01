@@ -1,8 +1,8 @@
 -- =============================================================================
--- 식재료 마스터·저장·요청 (cook-service / ingredient 도메인)
--- IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation,
--- IngredientRequest
--- 대상 DB: PostgreSQL
+-- 식재료 마스터·저장 (cook / ingredient 도메인)
+-- IngredientGroup, Ingredient, IngredientStorage, IngredientPreparation
+-- 대상 DB: PostgreSQL (JangGunKitchen)
+-- 참고: 07 번호는 의도적으로 비움(삭제된 재료요청 샘플 자리)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -51,16 +51,3 @@ SELECT id,
        created_at,
        updated_at
 FROM ingredient_preparation;
-
--- -----------------------------------------------------------------------------
--- Entity: IngredientRequest → ingredient_request
--- -----------------------------------------------------------------------------
-SELECT id,
-       ingredient_name,
-       request_type,
-       message,
-       member_id,
-       status,
-       created_at,
-       updated_at
-FROM ingredient_request;

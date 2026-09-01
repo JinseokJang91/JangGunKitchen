@@ -1,26 +1,5 @@
-// Category 관련 타입 정의
+// Category 관련 타입 정의 (/recipe/category 페이지·레시피 분류용)
 import type { Recipe, RecipeCookingTip, RecipeCategory } from './recipe';
-
-export interface CategoryInfo {
-    codeId: string;
-    detailCodeId: string;
-    codeName?: string;
-    detailName: string;
-    recipeCount?: number;
-    totalHits?: number;
-    reason?: string; // TRENDING | PERSONALIZED | SEASONAL
-}
-
-export interface TrendingCategoriesResponse {
-    categories: CategoryInfo[];
-    period: string;
-}
-
-export interface CategoryRecipesResponse {
-    category: CategoryInfo;
-    recipes: Recipe[];
-    totalCount: number;
-}
 
 /** 공통코드 상세(서브 카테고리) — loadCategories 등에서 사용 */
 export interface CategoryDetail {
@@ -33,17 +12,6 @@ export interface MainCategory {
     codeId: string;
     codeName: string;
     details: CategoryDetail[];
-}
-
-/** 카테고리 페이지 UI용 카테고리 (탭/칩 표시) */
-export interface Category {
-    value: string;
-    name: string;
-    description: string;
-    icon: string;
-    color: string;
-    recipeCount: number;
-    mainCategoryId?: string;
 }
 
 /** 카테고리 페이지 목록용 레시피 (API Recipe + UI 필드) */

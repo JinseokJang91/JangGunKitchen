@@ -59,8 +59,7 @@ public class MemberWithdrawalService {
         exec("DELETE FROM recipe_bookmark WHERE member_id = ?", memberId);
         exec("DELETE FROM recipebook WHERE member_id = ?", memberId);
 
-        // 5) 재료 등록 요청·메타(선택적 작성자 참조)
-        exec("DELETE FROM ingredient_request WHERE member_id = ?", memberId);
+        // 5) 재료 메타(선택적 작성자 참조)
         exec("UPDATE ingredient_storage SET created_by = NULL WHERE created_by = ?", memberId);
         exec("UPDATE ingredient_preparation SET created_by = NULL WHERE created_by = ?", memberId);
 

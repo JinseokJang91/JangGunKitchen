@@ -103,12 +103,6 @@ const routes: RouteRecordRaw[] = [
                 meta: { requiresAdmin: true }
             },
             {
-                path: '/admin/ingredient-requests',
-                name: 'adminIngredientRequestList',
-                component: () => import('@/views/pages/admin/IngredientRequestList.vue'),
-                meta: { requiresAdmin: true }
-            },
-            {
                 path: '/admin/inquiries',
                 name: 'adminInquiryList',
                 component: () => import('@/views/pages/admin/AdminInquiryList.vue'),

@@ -1,5 +1,7 @@
 package com.janggunkitchen.cook.api.recommendation.domain.service;
 
+import com.janggunkitchen.common.domain.entity.Member;
+import com.janggunkitchen.common.domain.repository.MemberRepository;
 import com.janggunkitchen.cook.api.recipe.domain.entity.Recipe;
 import com.janggunkitchen.cook.api.recipe.domain.entity.RecipeView;
 import com.janggunkitchen.cook.api.recipe.domain.repository.RecipeFavoriteRepository;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +29,7 @@ public class RecommendationService {
     private final RecipeViewRepository recipeViewRepository;
     private final RecipeRepository recipeRepository;
     private final RecipeFavoriteRepository recipeFavoriteRepository;
+    private final MemberRepository memberRepository;
     
     /**
      * 오늘의 레시피 추천
@@ -116,18 +120,12 @@ public class RecommendationService {
         log.info("Total candidates: {}", candidates.size());
         
         // 5. 점수 기반 정렬 및 상위 N개 선택
-        List<RecommendedRecipeDto> recommendations = candidates.stream()
+        List<ScoredRecipe> selected = candidates.stream()
                 .sorted(Comparator.comparingDouble(ScoredRecipe::getScore).reversed())
                 .limit(limit)
-                .map(scored -> {
-                    int favoriteCount = (int) recipeFavoriteRepository.countByRecipeId(scored.getRecipe().getId());
-                    return RecommendedRecipeDto.from(
-                            scored.getRecipe(),
-                            scored.getReason(),
-                            favoriteCount
-                    );
-                })
                 .collect(Collectors.toList());
+
+        List<RecommendedRecipeDto> recommendations = toRecommendedDtos(selected);
         
         log.info("Final recommendations: {}", recommendations.size());
         
@@ -152,23 +150,44 @@ public class RecommendationService {
         Collections.shuffle(popularRecipes);
         
         // 상위 N개 선택
-        List<RecommendedRecipeDto> recommendations = popularRecipes.stream()
+        List<ScoredRecipe> selected = popularRecipes.stream()
                 .limit(limit)
-                .map(recipe -> {
-                    int favoriteCount = (int) recipeFavoriteRepository.countByRecipeId(recipe.getId());
-                    return RecommendedRecipeDto.from(
-                            recipe,
-                            "인기 레시피",
-                            favoriteCount
-                    );
-                })
+                .map(recipe -> new ScoredRecipe(recipe, 0.0, "인기 레시피"))
                 .collect(Collectors.toList());
+
+        List<RecommendedRecipeDto> recommendations = toRecommendedDtos(selected);
         
         return TodayRecommendationDto.builder()
                 .recipes(recommendations)
                 .recommendationType("GENERAL")
                 .refreshable(true)
                 .build();
+    }
+
+    private List<RecommendedRecipeDto> toRecommendedDtos(List<ScoredRecipe> scoredRecipes) {
+        Set<Long> memberIds = scoredRecipes.stream()
+                .map(scored -> scored.getRecipe().getMemberId())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, Member> memberMap = memberIds.isEmpty()
+                ? Map.of()
+                : memberRepository.findAllById(memberIds).stream()
+                        .collect(Collectors.toMap(Member::getId, Function.identity()));
+
+        return scoredRecipes.stream()
+                .map(scored -> {
+                    Recipe recipe = scored.getRecipe();
+                    int favoriteCount = (int) recipeFavoriteRepository.countByRecipeId(recipe.getId());
+                    Member member = memberMap.get(recipe.getMemberId());
+                    return RecommendedRecipeDto.from(
+                            recipe,
+                            scored.getReason(),
+                            favoriteCount,
+                            member
+                    );
+                })
+                .collect(Collectors.toList());
     }
     
     /**
