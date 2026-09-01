@@ -152,9 +152,14 @@ jobs:
             if [ -n "${SECRET_ID:-}" ] && [ -f scripts/fetch-secrets-to-env.sh ]; then
               export AWS_REGION="${AWS_REGION_FOR_SECRETS:-ap-northeast-2}"
               export OUTPUT_FILE="./.env.secrets"
+              export VALUE_FORMAT="${SECRETS_VALUE_FORMAT:-raw}"
               bash scripts/fetch-secrets-to-env.sh
             fi
-            docker compose up -d --no-build
+            if [ -f ./.env.secrets ]; then
+              docker compose --env-file ./.env.secrets up -d --no-build
+            else
+              docker compose up -d --no-build
+            fi
             docker image prune -f || true
             rm -f deploy.tar.gz
 
