@@ -1,7 +1,7 @@
 # Backend 패키지 및 파일 구조도
 
 **작성일**: 2026-04-14  
-**최종 수정일**: 2026-08-29  
+**최종 수정일**: 2026-09-01  
 **대상**: `backend/` (Spring Boot 단일 애플리케이션)
 
 ---
@@ -70,6 +70,10 @@ app/
 database-migrations/
 ├── build.gradle
 └── src/main/resources/db/migration/
-    ├── V1__baseline_schema.sql
-    └── V2__add_member_role.sql
+    ├── V1__baseline_schema.sql          # 베이스라인(과거 테마·재료요청 CREATE 포함)
+    ├── V2__add_member_role.sql          # member.role (USER/ADMIN)
+    ├── V3__drop_theme_collection.sql    # theme_collection* DROP
+    └── V4__drop_ingredient_request.sql  # ingredient_request DROP
 ```
+
+- 기존 `V1`/`V2` 내용은 수정하지 않는다. 스키마 제거는 `V3`/`V4`처럼 새 버전으로만 한다.

@@ -1,4 +1,4 @@
-# JangGunKitchen 아키텍처 정의서
+# 장군의부엌 아키텍처 정의서
 
 ## 문서 정보
 
@@ -6,15 +6,15 @@
 |------|------|
 | 프로젝트명 | JangGunKitchen |
 | 문서명 | 아키텍처 정의서 |
-| 버전 | 1.2 |
-| 작성일 | 2026-02-20 |
-| 최종 수정일 | 2026-08-29 |
+| 버전 | 1.3 |
+| 작성일 | 2026-09-01 |
+| 최종 수정일 | 2026-09-01 |
 
 ---
 
 ## 1. 개요
 
-본 문서는 JangGunKitchen 애플리케이션의 **시스템 구성**, **서비스 아키텍처**, **주요 데이터·처리 흐름**을 도식으로 정리한다.  
+본 문서는 **장군의부엌** 애플리케이션의 **시스템 구성**, **서비스 아키텍처**, **주요 데이터·처리 흐름**을 도식으로 정리한다.  
 Flow 차트 및 다이어그램은 Mermaid를 사용하며, 뷰어에서 렌더링하면 한 눈에 구조를 파악할 수 있다.
 
 ---
@@ -187,7 +187,7 @@ flowchart LR
 
     subgraph Load["병렬 로딩"]
         B1["오늘의 추천\n/recommendations/today"]
-        B2["인기 레시피\n/recipes/popular"]
+        B2["인기 레시피\n/api/cook/recipe/popular"]
         B5["최근 본\n(로그인 시)\n/recent-views"]
         B6["추천 크리에이터\n/creators/recommended"]
     end
@@ -235,7 +235,8 @@ sequenceDiagram
 | **백엔드** | Java 21, Spring Boot 3.5, Spring Security, JPA, QueryDSL |
 | **DB** | PostgreSQL |
 | **인증** | JWT, OAuth2 (네이버/구글/카카오) |
-| **기타** | Spring Scheduler (인기 점수 등 배치성 작업) |
+| **기타** | Spring Scheduler (인기 점수 등 배치성 작업), Flyway (`database-migrations`) |
+| **로컬 기본** | API `http://localhost:8080`, 프론트 `VITE_API_BASE_URL` 단일 변수 |
 
 ---
 
@@ -267,5 +268,6 @@ JangGunKitchen/
 | 버전 | 일자 | 변경 내용 |
 |------|------|-----------|
 | 1.0 | 2026-02-20 | 최초 작성(시스템·서비스·프론트 구조 및 주요 플로우) |
-| 1.1 | 2026-03-14 | common-service를 REST 미노출 공유 라이브러리로 정정, 공통코드 API는 cook-service에서 제공. DB를 PostgreSQL로 정정, Redis는 현재 미구성·추후 구현 가능으로 표기 |
+| 1.1 | 2026-03-14 | (구 Knusrae 3서비스 시기) common을 REST 미노출 공유 라이브러리로 정정, 공통코드 API는 cook에서 제공. DB를 PostgreSQL로 정정, Redis는 미구성 |
 | 1.2 | 2026-08-29 | 3개 서비스+공통 라이브러리를 `backend/app` 단일 애플리케이션으로 통합. API prefix 유지, 프론트 base URL 단일화 |
+| 1.3 | 2026-09-01 | 대시보드 인기 API 경로 정정(`/api/cook/recipe/popular`), 로컬 포트·`VITE_API_BASE_URL`·Flyway 명시. docs 전수 현행화 |

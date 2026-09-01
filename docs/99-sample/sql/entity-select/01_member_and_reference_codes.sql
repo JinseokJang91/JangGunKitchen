@@ -1,7 +1,7 @@
 -- =============================================================================
--- 회원·소셜·공통코드 (common-service 엔티티)
+-- 회원·소셜·공통코드 (common 도메인 엔티티)
 -- Member, Follow, CommonCode, CommonCodeDetail
--- 대상 DB: PostgreSQL (Knusrae baseline 스키마 기준)
+-- 대상 DB: PostgreSQL (JangGunKitchen / Flyway V1+V2 기준, member.role 포함)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -16,6 +16,7 @@ SELECT id,
        birth,
        gender,
        social_role,
+       role,
        profile_image,
        bio,
        follower_count,

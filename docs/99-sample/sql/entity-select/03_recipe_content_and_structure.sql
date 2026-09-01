@@ -1,8 +1,8 @@
 -- =============================================================================
--- 레시피 본문·구성 (cook-service / recipe 도메인)
+-- 레시피 본문·구성 (cook / recipe 도메인)
 -- Recipe, RecipeDetail, RecipeImage, RecipeCategory,
 -- RecipeIngredientGroup, RecipeIngredientItem
--- 대상 DB: PostgreSQL
+-- 대상 DB: PostgreSQL (JangGunKitchen)
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
