@@ -122,6 +122,6 @@
 
 ## 비고
 
-- **사용 화면**: 해당 컴포넌트를 직접 import하여 사용하는 View 또는 상위 컴포넌트 이름. 다른 컴포넌트를 통해서만 사용되는 경우 상위 컴포넌트명으로 표기(예: BookPage → BookFrame 사용처인 OpenBookView 기준으로는 Bookmarks).
+- **사용 화면**: 해당 컴포넌트를 직접 import하여 사용하는 View 또는 상위 컴포넌트 이름. 다른 컴포넌트를 통해서만 사용되는 경우 상위 컴포넌트명으로 표기(예: BookPage → BookFrame 사용처인 OpenBookView 기준으로는 Bookmarks)
 - AppLayout, App.vue 는 화면이 아닌 레이아웃·루트이므로 "사용 화면"에만 표기함.
-- 레시피 작성/수정(`RecipeCreate`/`RecipeEdit`)은 form 컴포넌트 조합이며 Toast UI 에디터는 재료 관리 화면에만 사용.
+- 레시피 작성/수정(`RecipeCreate`/`RecipeEdit`)은 form 컴포넌트 조합이며 Toast UI 에디터는 재료 관리 화면에만 사용

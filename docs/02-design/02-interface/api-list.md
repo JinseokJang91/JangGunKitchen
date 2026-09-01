@@ -123,7 +123,4 @@
 ---
 
 ## 3. 참고
-
-- 프로그램·화면 매핑: [05-program-list/program-list.md](../05-program-list/program-list.md)
-- 외부 OAuth 연동: [interface-definition.md](./interface-definition.md)
-- 테마 컬렉션·재료 정보 요청·트렌딩 카테고리 API는 2026-08-29 삭제됨(본 목록에 없음).
+- 테마 컬렉션·재료 정보 요청·트렌딩 카테고리 API는 2026-08-29 삭제됨(본 목록에 없음)

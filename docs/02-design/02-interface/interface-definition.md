@@ -135,9 +135,3 @@ OAuth 콜백 로컬 포트는 **8080** (`backend/app`). 콘솔 redirect URI와 �
 - **인증**: OAuth 2.0 Authorization Code 플로우. 클라이언트에서 인가 코드를 받아 백엔드로 전달한 뒤, 백엔드에서 외부 토큰/사용자정보 API를 호출합니다.
 - **설정**: 각 소셜별 `client.id`, `client.secret`, `redirect.uri` 등은 설정 파일(환경 변수)로 관리합니다.
 - **에러 처리**: 외부 API 오류 시 로그인 실패로 처리하며, 상세 오류는 로그에 기록합니다.
-
----
-
-## 6. 참고
-
-- API 목록(내부 제공 API): [api-list.md](./api-list.md)
