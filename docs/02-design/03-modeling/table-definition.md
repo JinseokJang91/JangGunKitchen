@@ -438,5 +438,4 @@ V1 베이스라인에 생성되었다가 이후 버전에서 DROP된 테이블�
 
 ## 5. 참고
 
-- **인덱스·UK**: Entity의 `@Index`, `@UniqueConstraint` 기준으로 정의되어 있으며, 상세 DDL은 `backend/database-migrations` Flyway 참고.
-- **member.role**: V2에서 추가. Entity enum `MemberRole` (USER/ADMIN).
+- **인덱스·UK**: Entity의 `@Index`, `@UniqueConstraint` 기준으로 정의되어 있으며, 상세 DDL은 `backend/database-migrations` Flyway 참고

@@ -100,9 +100,9 @@
 
 ## 비고
 
-- `/my/recipes`, `/my/profile`, `/my/comments`, `/my/inquiries`, `/my/favorites` 는 `/my?tab=...` 로 리다이렉트되며, 실제 콘텐츠는 MyPage.vue 탭으로 표시됨.
-- `/community/faq` 는 `/support` 로 리다이렉트됨.
-- `/ranking/weekly`, `/ranking/monthly` 는 `/ranking?period=...` 로 리다이렉트됨.
-- AppLayout 하위 라우트(메인~피드)는 공통 레이아웃(헤더·네비게이션 등)을 사용함.
-- `OAuthCallback.vue`는 공통 콜백 유틸용 파일이며 라우트에 직접 등록되지 않음(프로바이더별 Callback View 사용).
-- 테마 컬렉션·트렌딩 카테고리 대시보드 섹션은 2026-08-29 삭제됨.
+- `/my/recipes`, `/my/profile`, `/my/comments`, `/my/inquiries`, `/my/favorites` 는 `/my?tab=...` 로 리다이렉트되며, 실제 콘텐츠는 `MyPage.vue` 탭으로 표시됨
+- `/community/faq` 는 `/support` 로 리다이렉트됨
+- `/ranking/weekly`, `/ranking/monthly` 는 `/ranking?period=...` 로 리다이렉트됨
+- AppLayout 하위 라우트(메인~피드)는 공통 레이아웃(헤더·네비게이션 등)을 사용함
+- `OAuthCallback.vue`는 공통 콜백 유틸용 파일이며 라우트에 직접 등록되지 않음(프로바이더별 Callback View 사용)
+- 테마 컬렉션·트렌딩 카테고리 대시보드 섹션은 2026-08-29 삭제됨
