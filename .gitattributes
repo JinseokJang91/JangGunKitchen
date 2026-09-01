@@ -8,6 +8,16 @@
 *.groovy text eol=lf
 *.md text eol=lf
 
+# Frontend / TypeScript (unplugin 생성물 components.d.ts 포함) — LF 고정
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.json text eol=lf
+
 # Windows용 bat 파일은 CRLF
 *.bat text eol=crlf
 

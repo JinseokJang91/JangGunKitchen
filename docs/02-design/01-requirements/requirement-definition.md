@@ -6,9 +6,9 @@
 |------|------|
 | 프로젝트명 | JangGunKitchen |
 | 문서명 | 요구사항 정의서 |
-| 버전 | 1.3 |
+| 버전 | 1.4 |
 | 작성일 | 2026-03-14 |
-| 최종 수정일 | 2026-08-29 |
+| 최종 수정일 | 2026-09-01 |
 | 작성 기준 | 본 애플리케이션 구현 기능 분석·추출 |
 
 ---
@@ -55,6 +55,7 @@
 | REQ-MEM-02 | 내 정보 수정 | 닉네임·프로필 이미지 등 프로필 수정 | 기능 | 필수 | 구현됨 | PUT /api/member/profile |
 | REQ-MEM-03 | 타 회원 프로필 조회 | 다른 회원(크리에이터) 프로필·레시피 목록 조회 | 기능 | 필수 | 구현됨 | /member/:id, GET /api/member/{id} |
 | REQ-MEM-04 | 마이페이지 | 내 정보 수정, 내 레시피, 내 댓글, 1:1 문의, 찜 목록, 북마크 관리 탭 제공 | 기능 | 필수 | 구현됨 | /my, tab=profile|recipes|comments|inquiries|favorites|bookmarks |
+| REQ-MEM-05 | 회원 탈퇴 | 로그인 회원 계정 탈퇴(비활성화·연관 정리) | 기능 | 일반 | 구현됨 | DELETE /api/member/me |
 
 ### 2.3 레시피
 
@@ -173,7 +174,7 @@
 
 - **인터페이스**: [02-interface/interface-definition.md](../02-interface/interface-definition.md), [02-interface/api-list.md](../02-interface/api-list.md)
 - **테이블·엔티티**: [03-modeling/table-definition.md](../03-modeling/table-definition.md)
-- **화면·라우트**: [05-program-list/프로그램목록.md](../05-program-list/프로그램목록.md) — 프론트 라우트·View 매핑
+- **화면·라우트**: [05-program-list/program-list.md](../05-program-list/program-list.md), [04-UI/ui-list.md](../04-UI/ui-list.md) — 프론트 라우트·View 매핑
 - **백엔드 API 목록**: [02-interface/api-list.md](../02-interface/api-list.md) — Controller·Base Path·주요 메서드
 
 ---
@@ -185,3 +186,5 @@
 | 1.0 | 2026-02-20 | 최초 작성(구현 기능 기반 요구사항 추출) |
 | 1.1 | 2026-03-14 | 참조 문서 링크 정정(api-specification→interface-definition·api-list, entity-design→테이블정의서), 문서 정보 최신화 |
 | 1.2 | 2026-04-17 | 현재 애플리케이션 라우트 기준으로 소셜 콜백 경로(custom→google), FAQ 경로(/support), 에러 경로(/error/access, /error/error) 표기 정정 |
+| 1.3 | 2026-08-29 | 테마 컬렉션·트렌딩 카테고리·재료 정보 요청 워크플로우 삭제 반영 |
+| 1.4 | 2026-09-01 | 회원 탈퇴(REQ-MEM-05) 추가, 프로그램 목록 링크 `program-list.md`로 정정 |

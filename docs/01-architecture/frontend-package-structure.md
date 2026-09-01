@@ -1,7 +1,7 @@
 # Frontend 패키지 및 파일 구조도
 
 **작성일**: 2026-04-14  
-**최종 수정일**: 2026-08-29  
+**최종 수정일**: 2026-09-01  
 **대상**: `frontend/` (Vue 3 + TypeScript + Vite + PrimeVue)
 
 ---
@@ -174,7 +174,6 @@ src/
 │       ├── RecipeDetailIngredients.vue
 │       ├── RecipeDetailSteps.vue
 │       ├── RecipeGridCard.vue
-│       ├── RecipeListItem.vue
 │       └── form/
 │           ├── RecipeFormBasicInfo.vue
 │           ├── RecipeFormClassification.vue
