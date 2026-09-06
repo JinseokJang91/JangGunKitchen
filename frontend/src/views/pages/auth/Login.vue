@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import logoImage from '@/assets/images/logo/logo-icon.png';
+import logoImage from '@/assets/images/logo/logo-full.png';
 import SocialLoginButtons from '@/components/SocialLoginButtons.vue';
 import { openOAuthPopup } from '@/utils/oauth';
 import { ref } from 'vue';

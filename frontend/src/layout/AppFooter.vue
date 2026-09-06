@@ -17,7 +17,7 @@ import iconKakaoTalk from '@/assets/images/badges/badge_kakaotalk.png';
                 <div class="footer-logo-container">
                     <img :src="logoText" alt="JangGunKitchen" class="footer-logo" />
                 </div>
-                <p class="footer-description">내 마음에 스며드는 레시피 플랫폼</p>
+                <p class="footer-description">다양한 레시피와 요리 꿀팁을 공유하는 레시피 플랫폼</p>
                 <div class="app-download-buttons">
                     <a href="#" class="download-btn app-store" aria-label="App Store에서 다운로드">
                         <img :src="badgeAppStore" alt="App Store" />
